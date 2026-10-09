@@ -15,7 +15,7 @@ export const authRouter = Router();
 const REFRESH_COOKIE = 'refreshToken';
 const cookieOpts = {
   httpOnly: true,
-  sameSite: 'lax' as const,
+  sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
   secure: isProd,
   maxAge: 7 * 24 * 3600 * 1000,
 };

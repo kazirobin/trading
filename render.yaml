@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: tradevix-api
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: npm install --include=dev && npm run build -w @tradevix/server
+    startCommand: npm run start -w @tradevix/server
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: tradevix
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: ADMIN_EMAILS
+        value: admin@tradevix.local
+      - key: FEE_ACCOUNT_EMAIL
+        value: fees@tradevix.local

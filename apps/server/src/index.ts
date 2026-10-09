@@ -23,6 +23,10 @@ async function main() {
   app.use(cookieParser());
   if (env.NODE_ENV !== 'test') app.use(morgan('dev'));
 
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok', uptime: process.uptime() });
+  });
+
   app.use(
     '/api/auth',
     rateLimit({ windowMs: 15 * 60 * 1000, limit: 100, standardHeaders: 'draft-7', legacyHeaders: false }),
