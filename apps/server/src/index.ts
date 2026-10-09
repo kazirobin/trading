@@ -6,15 +6,13 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { clientOrigins, env } from './config/env';
-import { connectDB } from './config/db';
+import { connectDBWithRetry, dbReady } from './config/db';
 import { apiRouter } from './routes';
 import { errorHandler, notFoundHandler } from './middleware/error';
 import { initSockets } from './sockets/hub';
 import { startMarketFeed } from './services/marketData';
 
 async function main() {
-  await connectDB();
-
   const app = express();
   app.set('trust proxy', 1);
   app.use(helmet({ crossOriginResourcePolicy: false }));
@@ -24,7 +22,7 @@ async function main() {
   if (env.NODE_ENV !== 'test') app.use(morgan('dev'));
 
   app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', uptime: process.uptime() });
+    res.json({ status: 'ok', db: dbReady() ? 'up' : 'down', uptime: process.uptime() });
   });
 
   app.use(
@@ -47,7 +45,9 @@ async function main() {
     console.log(`[server] listening on http://localhost:${env.PORT} (${env.NODE_ENV})`);
   });
 
-  void startMarketFeed();
+  void connectDBWithRetry()
+    .then(() => startMarketFeed())
+    .catch((err) => console.error('[server] background init error', err));
 
   const shutdown = () => {
     console.log('[server] shutting down...');

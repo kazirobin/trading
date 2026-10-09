@@ -34,5 +34,5 @@ export const adminEmails = env.ADMIN_EMAILS
   .filter(Boolean);
 
 export const clientOrigins = env.CLIENT_ORIGIN.split(',')
-  .map((s) => s.trim())
+  .map((s) => s.trim().replace(/\/+$/, ''))
   .filter(Boolean);
