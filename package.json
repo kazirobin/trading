@@ -1,0 +1,20 @@
+{
+  "name": "tradevix",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Tradevix - full-stack online trading platform (Next.js + Node/Express + MongoDB)",
+  "workspaces": [
+    "apps/server",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev -w @tradevix/server",
+    "dev:web": "npm run dev -w @tradevix/web",
+    "build": "npm run build -w @tradevix/server && npm run build -w @tradevix/web",
+    "lint": "npm run lint -w @tradevix/web",
+    "seed": "npm run seed -w @tradevix/server"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

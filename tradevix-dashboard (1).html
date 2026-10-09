@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TRADEVIX - Trading Terminal (Demo)</title>
+<style>
+:root{
+  --brand:#7C3AED; --acc:#8B5CF6; --bg:#080B12; --card:#111827; --hover:#172033; --line:#263043;
+  --tx:#F8FAFC; --mut:#94A3B8; --up:#22C55E; --down:#EF4444; --warn:#F59E0B; --info:#38BDF8;
+  --r:12px;
+}
+body.soft{--bg:#0d1322;--card:#141c30;--hover:#1c2640}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--tx);font:14px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;transition:.15s}
+input,select{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;outline:none}
+input:focus,select:focus{border-color:var(--acc)}
+.up{color:var(--up)}.down{color:var(--down)}.mut{color:var(--mut)}.warn{color:var(--warn)}.info{color:var(--info)}
+svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#263043;border-radius:8px}
+
+/* ---------- header ---------- */
+.hdr{height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 18px;background:var(--card);border-bottom:1px solid var(--line);position:relative;z-index:30}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--brand),var(--acc));display:grid;place-items:center;box-shadow:0 4px 18px #7C3AED55}
+.logo svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.brand b{font-size:18px;letter-spacing:1.2px;display:block;line-height:1.1}.brand small{color:var(--mut);font-size:11px}
+.hr{display:flex;align-items:center;gap:10px}
+.rel{position:relative}
+.acct{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:6px 12px;text-align:left}
+.acct:hover{border-color:var(--acc)}
+.acct small{display:block;font-size:10px;font-weight:800;letter-spacing:.7px;color:var(--warn)}
+.acct b{font-size:16px}
+.btn{padding:10px 16px;border-radius:10px;font-weight:700}
+.btn.green{background:var(--up);color:#04130a}.btn.green:hover{filter:brightness(1.1)}
+.btn.gray{background:#1c2639;color:var(--tx)}.btn.gray:hover{background:#243149}
+.btn.brand{background:var(--brand)}.btn.brand:hover{background:var(--acc)}
+.iconbtn{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:var(--bg);border:1px solid var(--line);color:var(--mut);position:relative}
+.iconbtn:hover{color:var(--tx);border-color:var(--acc)}
+.dot{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:99px;background:var(--down);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+.menu{position:absolute;top:calc(100% + 8px);right:0;min-width:260px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 18px 50px #000b;padding:6px;display:none;z-index:60}
+.menu.open{display:block}
+.menu .it{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:10px 12px;border-radius:9px;text-align:left}
+.menu .it:hover:not(.off){background:var(--hover)}
+.menu .it.off{opacity:.5;cursor:not-allowed}
+.menu .sep{height:1px;background:var(--line);margin:6px 0}
+.menu h4{padding:8px 12px;color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+
+/* ---------- shell ---------- */
+.shell{display:grid;grid-template-columns:88px minmax(0,1fr) 330px;gap:14px;padding:14px;height:calc(100% - 64px)}
+.shell.nopanel{grid-template-columns:88px minmax(0,1fr)}
+.shell.nopanel .panel{display:none}
+.sb{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:8px;display:flex;flex-direction:column;gap:6px;overflow-y:auto}
+.sb .grow{flex:1}
+.nv{display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 2px;border-radius:10px;color:var(--mut);font-size:11px;font-weight:600;width:100%}
+.nv:hover{background:var(--hover);color:var(--tx)}
+.nv.on{background:linear-gradient(135deg,var(--brand),var(--acc));color:#fff;box-shadow:0 6px 18px #7C3AED44}
+.nv svg{width:23px;height:23px}
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;gap:12px}
+.subtabs{display:flex;gap:6px;overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:6px;flex:none}
+.st{padding:8px 16px;border-radius:9px;color:var(--mut);font-weight:600;white-space:nowrap}
+.st:hover{color:var(--tx);background:var(--hover)}
+.st.on{background:var(--bg);color:#fff;box-shadow:inset 0 -2px 0 var(--acc)}
+.views{flex:1;min-height:0;position:relative}
+.view{display:none;height:100%;overflow:auto}
+.view.on{display:block}
+#v-trade.on{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card:hover{border-color:#34425a}
+.card h3{font-size:16px;margin-bottom:12px}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.stat span{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.6px}.stat b{display:block;font-size:22px;margin-top:3px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mut);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+tbody tr:hover{background:var(--hover)}
+.tw{overflow-x:auto}
+.empty{text-align:center;color:var(--mut);padding:34px 10px}
+.tag{padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700}
+.tag.won{background:#0c2a1b;color:var(--up)}.tag.lost{background:#2d1010;color:var(--down)}.tag.tie,.tag.open,.tag.pending{background:#1c2639;color:var(--info)}
+.note{background:#0f1c2e;border:1px solid #1d3a57;color:#9bd4f5;border-radius:10px;padding:11px 14px;font-size:13px}
+.note.warn{background:#2b2108;border-color:#6b4a0c;color:var(--warn)}
+
+/* ---------- chart ---------- */
+.ctools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:none}
+.chip{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:7px 12px}
+.chip:hover{border-color:var(--acc)}
+.coin{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--info));display:grid;place-items:center;font-weight:800;font-size:12px}
+.chip b{display:block;line-height:1.1}.chip small{color:var(--warn);font-weight:800}
+.tfs{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px}
+.tfs button{padding:6px 12px;border-radius:8px;color:var(--mut);font-weight:700}.tfs button.on{background:var(--brand);color:#fff}
+.lp{font-size:24px;font-weight:800}
+.conn{font-size:12px;color:var(--mut)}
+.cardchart{flex:1;min-height:340px;display:flex;flex-direction:column;padding:12px}
+#chartWrap{position:relative;flex:1;min-height:280px}
+#chart{position:absolute;inset:0}
+.cdl{position:absolute;z-index:6;display:none;pointer-events:none;padding:2px 9px;border-radius:7px;font-size:12px;font-weight:800;letter-spacing:.3px;color:#fff;background:#111827;border:1px solid var(--acc);box-shadow:0 3px 12px #0009;font-variant-numeric:tabular-nums;transform:translateY(-50%)}
+.cdl.up{background:#14532d;border-color:var(--up)}.cdl.down{background:#7f1d1d;border-color:var(--down)}
+
+.clk{position:absolute;left:10px;top:8px;z-index:5;font-size:12px;color:var(--mut);background:#080B12cc;padding:3px 9px;border-radius:7px;pointer-events:none}
+.tickrow{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--mut)}.tickrow b{color:var(--tx)}
+
+/* ---------- right panel ---------- */
+.panel{display:flex;flex-direction:column;gap:12px;min-height:0;overflow-y:auto}
+.asset{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left}
+.asset .pct{color:var(--warn);font-weight:800;font-size:17px}
+.pend{display:flex;align-items:center;justify-content:space-between;margin:14px 0 4px;color:var(--mut);font-size:13px}
+.sw{width:42px;height:24px;background:#263043;border-radius:99px;position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s}
+.sw.on{background:var(--brand)}.sw.on::after{left:21px}
+.ctl{border:1px solid var(--line);border-radius:10px;padding:7px 9px;position:relative;margin-top:17px;background:var(--bg)}
+.ctl label{position:absolute;top:-9px;left:10px;background:var(--card);padding:0 6px;color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.ctl .in{display:flex;align-items:center;gap:4px}
+.ctl .in b,.ctl .in input{font-size:20px;font-weight:700;text-align:center;border:0;background:transparent;width:100%;padding:3px 0;color:var(--tx)}
+.rb{width:32px;height:32px;border-radius:50%;background:#1c2639;font-size:19px;line-height:1;flex:none}
+.rb:hover{background:var(--brand)}
+.chips{display:flex;gap:6px;margin-top:10px}
+.chips button{flex:1;background:#1c2639;border-radius:8px;padding:5px 0;font-size:12px;color:var(--mut);font-weight:700}.chips button:hover{background:var(--brand);color:#fff}
+.pay{display:flex;justify-content:space-between;margin:14px 0 12px;color:var(--mut)}.pay b{color:var(--tx);font-size:15px}
+.tb{width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-radius:12px;margin-bottom:10px;font-size:18px;font-weight:800;color:#fff}
+.tb small{display:block;font-size:11px;font-weight:600;opacity:.9;text-align:left}
+.tb .ic{width:34px;height:34px;border-radius:50%;background:#ffffff30;display:grid;place-items:center}
+.tb.buy{background:var(--up);color:#04130a;box-shadow:0 8px 22px #22C55E33}.tb.buy .ic{background:#00000022}
+.tb.sell{background:var(--down);box-shadow:0 8px 22px #EF444433}
+.tb:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}
+.tabs button{padding:11px;color:var(--mut);font-weight:700}.tabs button.on{color:#fff;box-shadow:inset 0 -2px 0 var(--acc)}
+.bd{background:#1c2639;border-radius:99px;padding:0 8px;font-size:12px;margin-left:5px}
+#tlist{max-height:300px;overflow-y:auto;padding-top:10px}
+.tr{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:8px}
+.tr .h{display:flex;justify-content:space-between;align-items:center}.tr .cd{font-size:17px}
+.tr .b{display:flex;justify-content:space-between;color:var(--mut);font-size:12px;margin-top:4px;gap:6px}
+.xbtn{color:var(--mut);font-size:12px;text-decoration:underline}
+
+/* ---------- misc ---------- */
+.faq details{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;background:var(--bg)}
+.faq summary{cursor:pointer;font-weight:700}.faq p{color:var(--mut);margin-top:8px}
+.tour .badge{display:inline-block;margin-bottom:8px}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal.open{display:flex}
+.mbox{background:var(--card);border:1px solid var(--line);border-radius:16px;width:min(460px,100%);padding:22px;box-shadow:0 30px 80px #000c}
+.mbox h3{font-size:18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.row:last-of-type{border-bottom:0}
+.row select{min-width:150px}
+#toast{position:fixed;top:78px;left:50%;transform:translateX(-50%);padding:11px 22px;border-radius:12px;font-weight:700;display:none;z-index:200;box-shadow:0 10px 34px #000a}
+#pairMenu{position:fixed;width:300px;max-height:380px;overflow-y:auto}
+.pm{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:9px 10px;border-radius:9px}
+.pm:hover{background:var(--hover)}.pm.on{background:#2a1f55}
+svg.eq{width:100%;height:210px;background:var(--bg);border-radius:10px}
+
+@media(max-width:1200px){.shell{grid-template-columns:88px minmax(0,1fr)}.panel{grid-column:1/-1;overflow:visible}body{overflow:auto}.shell{height:auto}.views{min-height:520px}.view{height:auto}#v-trade.on{min-height:560px}}
+@media(max-width:760px){
+  .shell{grid-template-columns:1fr;padding:10px}.sb{flex-direction:row;overflow-x:auto;padding:6px}.nv{min-width:70px}.sb .grow{display:none}
+  .hdr{height:auto;padding:10px;flex-wrap:wrap}.g4,.g3{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}
+  .brand small{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ============ HEADER ============ -->
+<header class="hdr">
+  <div class="brand">
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 8-9"/><path d="M15 6h5v5"/></svg></div>
+    <div><b>TRADEVIX</b><small>Trading Terminal &middot; Demo</small></div>
+  </div>
+
+  <div class="hr">
+    <div class="rel">
+      <button class="acct" id="acctBtn">
+        <div><small id="acctLabel">DEMO ACCOUNT</small><b id="bal">$0.00</b></div>
+        <svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="menu" id="acctMenu">
+        <h4>Select account</h4>
+        <button class="it" data-act="demo"><span><b>Demo Account</b><br><span class="mut" id="acctMenuBal">$0.00</span></span><span class="tag won">ACTIVE</span></button>
+        <button class="it off" title="Real-money trading needs a licensed broker. This build is demo only."><span><b>Live Account</b><br><span class="mut">$0.00 &middot; not available</span></span><svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+        <div class="sep"></div>
+        <button class="it" data-act="refill"><span>Refill demo balance</span><span class="up">+$10,000</span></button>
+      </div>
+    </div>
+    <button class="btn green" id="depBtn" data-i18n="deposit">+ Demo refill</button>
+    <button class="btn gray" id="wdBtn" data-i18n="withdrawal">Withdrawal</button>
+    <div class="rel">
+      <button class="iconbtn" id="bellBtn" aria-label="Notifications">
+        <svg class="i" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 21h4"/></svg>
+        <span class="dot" id="bellDot" style="display:none">0</span>
+      </button>
+      <div class="menu" id="bellMenu" style="min-width:300px"><h4>Notifications</h4><div id="notifList"></div></div>
+    </div>
+  </div>
+</header>
+
+<div class="shell" id="shell">
+  <!-- ============ LEFT SIDEBAR ============ -->
+  <nav class="sb">
+    <button class="nv on" data-go="trade"><svg class="i" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg><span data-i18n="trade">Trade</span></button>
+    <button class="nv" data-go="support"><svg class="i" viewBox="0 0 24 24"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="13" width="4" height="7" rx="1.5"/><rect x="17" y="13" width="4" height="7" rx="1.5"/><path d="M19 20a4 4 0 0 1-4 2h-2"/></svg><span data-i18n="support">Support</span></button>
+    <button class="nv" data-go="account"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span data-i18n="account">Account</span></button>
+    <button class="nv" data-go="tournaments"><svg class="i" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg><span data-i18n="tournaments">Tournaments</span></button>
+    <button class="nv" data-go="market"><svg class="i" viewBox="0 0 24 24"><path d="M3 20h18"/><rect x="5" y="11" width="3" height="9"/><rect x="10.5" y="6" width="3" height="14"/><rect x="16" y="14" width="3" height="6"/></svg><span data-i18n="market">Market</span></button>
+    <button class="nv" data-go="analytics"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 4"/></svg><span data-i18n="analytics">Analytics</span></button>
+    <div class="grow"></div>
+    <div class="rel">
+      <button class="nv" id="helpBtn"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7"/><path d="M12 17h.01"/></svg><span data-i18n="help">Help</span></button>
+      <div class="menu" id="helpMenu" style="top:auto;bottom:0;left:calc(100% + 10px);right:auto;min-width:240px">
+        <h4>Help</h4>
+        <button class="it" data-go="support"><span>FAQ &amp; Support</span></button>
+        <button class="it" data-act="keys"><span>Keyboard shortcuts</span></button>
+        <button class="it" data-act="how"><span>How demo trading works</span></button>
+      </div>
+    </div>
+    <button class="nv" id="setBtn"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span data-i18n="settings">Settings</span></button>
+    <div class="rel">
+      <button class="nv" id="joinBtn"><svg class="i" viewBox="0 0 24 24"><path d="M21 5L3 12l7 2 2 7 3-5 5 4z"/></svg><span data-i18n="join">Join us</span></button>
+      <div class="menu" id="joinMenu" style="top:auto;bottom:0;left:calc(100% + 10px);right:auto;min-width:220px">
+        <h4>Official channels</h4>
+        <!-- apnar real link boshan -->
+        <a class="it" href="#" style="text-decoration:none;color:inherit"><span>Telegram channel</span><span class="mut">&rarr;</span></a>
+        <a class="it" href="#" style="text-decoration:none;color:inherit"><span>Facebook page</span><span class="mut">&rarr;</span></a>
+        <a class="it" href="#" style="text-decoration:none;color:inherit"><span>YouTube</span><span class="mut">&rarr;</span></a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============ CENTER ============ -->
+  <main class="main">
+    <div class="subtabs" id="subtabs">
+      <button class="st on" data-go="trade">Trade</button>
+      <button class="st" data-go="withdrawal">Withdrawal</button>
+      <button class="st" data-go="payments">Payments</button>
+      <button class="st" data-go="trades">Trades</button>
+      <button class="st" data-go="account">My Account</button>
+      <button class="st" data-go="market">Market</button>
+      <button class="st" data-go="tournaments">Tournaments</button>
+      <button class="st" data-go="analytics">Analytics</button>
+    </div>
+
+    <div class="views">
+      <!-- TRADE -->
+      <section class="view on" id="v-trade">
+        <div class="ctools">
+          <button class="chip" id="chartPair"><div class="coin" id="chCoin">B</div><div><b id="chName">BTC/USDT</b><small id="chPay">82%</small></div><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+          <div class="tfs" id="tfs"><button data-tf="1m" class="on">1m</button><button data-tf="3m">3m</button><button data-tf="5m">5m</button><button data-tf="15m">15m</button></div>
+          <span class="lp" id="lp">-</span>
+          <span class="conn" id="conn">connecting...</span>
+          <span class="conn" id="older"></span>
+        </div>
+        <div class="card cardchart">
+          <div id="chartWrap"><div class="clk" id="clk"></div><div class="cdl" id="cdl"></div><div id="chart"></div></div>
+          <div class="tickrow" id="tickrow"></div>
+          <div class="down" id="err"></div>
+        </div>
+      </section>
+
+      <!-- WITHDRAWAL -->
+      <section class="view" id="v-withdrawal">
+        <div class="card"><h3>Withdrawal</h3>
+          <div class="note warn" style="margin-bottom:14px">Eta <b>demo account</b> (virtual taka), tai real withdrawal nei. Real payment connect korte hole licensed broker/payment provider er sathe integration lagbe.</div>
+          <div class="tw"><table><thead><tr><th>Date</th><th>Method</th><th>Amount</th><th>Status</th></tr></thead><tbody><tr><td colspan="4" class="empty">Kono withdrawal request nei</td></tr></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- PAYMENTS -->
+      <section class="view" id="v-payments">
+        <div class="card"><h3>Payments</h3>
+          <div class="grid g3" style="margin-bottom:14px">
+            <div class="stat"><span>Demo balance</span><b id="pBal">$0.00</b></div>
+            <div class="stat"><span>Refill count</span><b id="pRef">0</b></div>
+            <div class="stat"><span>Real deposits</span><b>$0.00</b></div>
+          </div>
+          <div class="tw"><table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Status</th></tr></thead><tbody id="payBody"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- TRADES -->
+      <section class="view" id="v-trades">
+        <div class="card"><h3>Trade history</h3>
+          <div class="tw"><table><thead><tr><th>Time</th><th>Pair</th><th>Direction</th><th>Duration</th><th>Amount</th><th>Entry</th><th>Exit</th><th>Result</th><th>Profit / Loss</th></tr></thead><tbody id="histBody"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- ACCOUNT -->
+      <section class="view" id="v-account">
+        <div class="grid" style="gap:12px">
+          <div class="card" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+            <div class="coin" style="width:62px;height:62px;font-size:24px">T</div>
+            <div style="flex:1;min-width:200px"><b style="font-size:18px">Trader <span id="uid"></span></b><div class="mut">Demo account &middot; virtual balance &middot; real market prices</div></div>
+            <button class="btn brand" id="refillBtn2">Refill demo balance</button>
+            <button class="btn gray" id="resetBtn">Reset all data</button>
+          </div>
+          <div class="grid g4">
+            <div class="stat"><span>Balance</span><b id="aBal">$0</b></div>
+            <div class="stat"><span>Equity</span><b id="aEq">$0</b></div>
+            <div class="stat"><span>Today P/L</span><b id="aToday">$0</b></div>
+            <div class="stat"><span>Win rate</span><b id="aRate">0%</b></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MARKET -->
+      <section class="view" id="v-market">
+        <div class="card"><h3>Market <span class="mut" style="font-weight:400;font-size:13px">&middot; Binance Spot, 24/7</span></h3>
+          <div class="tw"><table><thead><tr><th>Pair</th><th>Price</th><th>24h change</th><th>24h high</th><th>24h low</th><th>Payout</th><th></th></tr></thead><tbody id="mktBody"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- TOURNAMENTS -->
+      <section class="view" id="v-tournaments">
+        <div class="note" style="margin-bottom:12px">Preview: eta demo tournament UI. Prize virtual, real taka na.</div>
+        <div class="grid g3" id="tourGrid"></div>
+      </section>
+
+      <!-- ANALYTICS -->
+      <section class="view" id="v-analytics">
+        <div class="grid" style="gap:12px">
+          <div class="grid g4">
+            <div class="stat"><span>Total trades</span><b id="anTotal">0</b></div>
+            <div class="stat"><span>Win rate</span><b id="anRate">0%</b></div>
+            <div class="stat"><span>Net P/L</span><b id="anNet">$0</b></div>
+            <div class="stat"><span>Best / Worst</span><b id="anBW" style="font-size:16px">-</b></div>
+          </div>
+          <div class="card"><h3>Equity curve (closed trades)</h3><svg class="eq" id="eqSvg" viewBox="0 0 600 210" preserveAspectRatio="none"></svg></div>
+          <div class="card"><h3>By pair</h3><div class="tw"><table><thead><tr><th>Pair</th><th>Trades</th><th>Wins</th><th>Win rate</th><th>Net P/L</th></tr></thead><tbody id="anPair"></tbody></table></div></div>
+        </div>
+      </section>
+
+      <!-- SUPPORT -->
+      <section class="view" id="v-support">
+        <div class="grid g2">
+          <div class="card faq"><h3>FAQ</h3>
+            <details><summary>Eta ki real money trading?</summary><p>Na. Eta demo account. Balance virtual, price real Binance market theke ashe.</p></details>
+            <details><summary>Trade kivabe settle hoy?</summary><p>Somoy shesh hole expiry mohurte r price entry price er sathe tulona kora hoy. Jitle payout %, harle invested amount khoti, soman hole ferot.</p></details>
+            <details><summary>Balance sesh hole ki korbo?</summary><p>Upore "Demo refill" button e click kore 10,000 $ abar nin.</p></details>
+            <details><summary>Timezone kivabe bodlabo?</summary><p>Sidebar er Settings e Timezone select korun (default UTC+06:00).</p></details>
+          </div>
+          <div class="card"><h3>Contact support</h3>
+            <div class="grid" style="gap:10px">
+              <input id="supEmail" type="email" placeholder="Email">
+              <input id="supSub" placeholder="Subject">
+              <textarea id="supMsg" rows="5" placeholder="Apnar message" style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--tx);font:inherit;resize:vertical"></textarea>
+              <button class="btn brand" id="supSend">Send message</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ============ RIGHT PANEL ============ -->
+  <aside class="panel">
+    <div class="card">
+      <button class="asset" id="panelPair">
+        <span style="display:flex;align-items:center;gap:10px"><span class="coin" id="pCoin">B</span><span><b id="pName">BTC/USDT</b><br><span class="mut" style="font-size:12px">Binance spot</span></span></span>
+        <span class="pct" id="pPct">82%</span>
+      </button>
+
+      <div class="pend"><span data-i18n="pending">Pending trade</span><button class="sw" id="pendSw" aria-label="Pending trade"></button></div>
+      <div id="pendRow" style="display:none"><input type="time" id="pendTime" style="width:100%"></div>
+
+      <div class="ctl"><label data-i18n="time">Time</label>
+        <div class="in"><button class="rb" id="tMinus">&minus;</button><b id="timeVal">00:01:00</b><button class="rb" id="tPlus">+</button></div>
+      </div>
+      <div class="ctl"><label data-i18n="invest">Investment</label>
+        <div class="in"><button class="rb" id="aMinus">&minus;</button><input id="amt" type="number" min="1" step="any" value="1"><span class="mut">$</span><button class="rb" id="aPlus">+</button></div>
+      </div>
+      <div class="chips"><button data-a="1">$1</button><button data-a="5">$5</button><button data-a="10">$10</button><button data-a="50">$50</button><button data-a="max">MAX</button></div>
+      <div class="pay"><span data-i18n="payout">Payout</span><b id="payVal">$1.82</b></div>
+
+      <button class="tb buy" id="buyBtn"><span><span data-i18n="buy">Buy</span><small id="buyS">Higher &middot; +$0.82</small></span><span class="ic"><svg class="i" viewBox="0 0 24 24" style="stroke-width:2.6"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span></button>
+      <button class="tb sell" id="sellBtn"><span><span data-i18n="sell">Sell</span><small id="sellS">Lower &middot; +$0.82</small></span><span class="ic"><svg class="i" viewBox="0 0 24 24" style="stroke-width:2.6"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span></button>
+    </div>
+
+    <div class="card" style="padding:0 14px 12px">
+      <div class="tabs">
+        <button id="tabOpen" class="on"><span data-i18n="trades">Trades</span><span class="bd" id="nOpen">0</span></button>
+        <button id="tabClosed"><span data-i18n="closed">Closed</span><span class="bd" id="nClosed">0</span></button>
+      </div>
+      <div id="tlist"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- pair menu -->
+<div class="menu" id="pairMenu"></div>
+
+<!-- ============ MODALS ============ -->
+<div class="modal" id="mSettings">
+  <div class="mbox">
+    <h3>Settings <button class="iconbtn" data-close>&times;</button></h3>
+    <div class="row"><span>Language</span><select id="setLang"><option value="en">English</option><option value="bn">&#2476;&#2494;&#2434;&#2482;&#2494;</option></select></div>
+    <div class="row"><span>Timezone</span><select id="setTz"></select></div>
+    <div class="row"><span>Full Night mode</span><button class="sw on" id="setNight" aria-label="Full Night mode"></button></div>
+    <div class="row"><span>Sound effects</span><button class="sw on" id="setSound" aria-label="Sound"></button></div>
+    <div class="row"><span>Chart trade markers</span><button class="sw on" id="setMarks" aria-label="Markers"></button></div>
+  </div>
+</div>
+
+<div class="modal" id="mRefill">
+  <div class="mbox">
+    <h3>Demo refill <button class="iconbtn" data-close>&times;</button></h3>
+    <p class="mut" style="margin-bottom:14px">Demo account er virtual balance abar <b class="up">$10,000</b> kore dewa hobe. Eta real taka na, kono payment lage na.</p>
+    <button class="btn green" style="width:100%" id="refillGo">Refill $10,000</button>
+  </div>
+</div>
+
+<div class="modal" id="mInfo">
+  <div class="mbox"><h3><span id="infoT">Info</span> <button class="iconbtn" data-close>&times;</button></h3><div id="infoB" class="mut"></div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const pad = n => String(n).padStart(2, '0');
+const fmt = (n, d = 2) => Number(n).toLocaleString('en-US', {minimumFractionDigits: d, maximumFractionDigits: d});
+const sgn = n => (n > 0 ? '+' : n < 0 ? '-' : '') + '$' + fmt(Math.abs(n));
+const cls = n => n >= 0 ? 'up' : 'down';
+const pd = p => p < 1 ? 5 : 2;
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+/* ---------------- config ---------------- */
+const PAIRS = {
+  BTCUSDT: {n: 'BTC/USDT', p: 82}, ETHUSDT: {n: 'ETH/USDT', p: 80}, BNBUSDT: {n: 'BNB/USDT', p: 78},
+  SOLUSDT: {n: 'SOL/USDT', p: 77}, XRPUSDT: {n: 'XRP/USDT', p: 75}, DOGEUSDT: {n: 'DOGE/USDT', p: 74},
+  ADAUSDT: {n: 'ADA/USDT', p: 73}, LTCUSDT: {n: 'LTC/USDT', p: 72}
+};
+const SYMS = Object.keys(PAIRS);
+const STEP = {'1m': 60, '3m': 180, '5m': 300, '15m': 900};
+const DURS = [15, 30, 60, 120, 180, 300, 600];
+const REST = ['https://api.binance.com', 'https://data-api.binance.vision'];
+const WSH = ['wss://stream.binance.com:9443', 'wss://data-stream.binance.vision:9443'];
+const DB_KEY = 'tradevix_demo_v1';
+
+const I18N = {
+  en: {trade:'Trade',support:'Support',account:'Account',tournaments:'Tournaments',market:'Market',analytics:'Analytics',help:'Help',settings:'Settings',join:'Join us',deposit:'+ Demo refill',withdrawal:'Withdrawal',buy:'Buy',sell:'Sell',time:'Time',invest:'Investment',payout:'Payout',pending:'Pending trade',trades:'Trades',closed:'Closed'},
+  bn: {trade:'\u099F\u09CD\u09B0\u09C7\u09A1',support:'\u09B8\u09BE\u09AA\u09CB\u09B0\u09CD\u099F',account:'\u0985\u09CD\u09AF\u09BE\u0995\u09BE\u0989\u09A8\u09CD\u099F',tournaments:'\u099F\u09C1\u09B0\u09CD\u09A8\u09BE\u09AE\u09C7\u09A8\u09CD\u099F',market:'\u09AE\u09BE\u09B0\u09CD\u0995\u09C7\u099F',analytics:'\u0985\u09CD\u09AF\u09BE\u09A8\u09BE\u09B2\u09BF\u099F\u09BF\u0995\u09CD\u09B8',help:'\u09B8\u09BE\u09B9\u09BE\u09AF\u09CD\u09AF',settings:'\u09B8\u09C7\u099F\u09BF\u0982\u09B8',join:'\u09AF\u09CB\u0997 \u09A6\u09BF\u09A8',deposit:'+ \u09A1\u09C7\u09AE\u09CB \u09B0\u09BF\u09AB\u09BF\u09B2',withdrawal:'\u0989\u09A4\u09CD\u09A4\u09CB\u09B2\u09A8',buy:'\u0995\u09BF\u09A8\u09C1\u09A8',sell:'\u09AC\u09BF\u0995\u09CD\u09B0\u09BF',time:'\u09B8\u09AE\u09DF',invest:'\u09AC\u09BF\u09A8\u09BF\u09DF\u09CB\u0997',payout:'\u09AA\u09C7\u0986\u0989\u099F',pending:'\u09AA\u09C7\u09A8\u09CD\u09A1\u09BF\u0982 \u099F\u09CD\u09B0\u09C7\u09A1',trades:'\u099F\u09CD\u09B0\u09C7\u09A1',closed:'\u09B6\u09C7\u09B7'}
+};
+
+/* ---------------- storage ---------------- */
+const defaults = () => ({balance: 10000, refills: 1, trades: [], pending: [], notifs: [], uid: String(Math.floor(100000 + Math.random() * 899999)),
+  payments: [{ts: Date.now(), type: 'Demo credit', amount: 10000}], st: {lang: 'en', tz: 6, night: true, sound: true, marks: true}});
+let db;
+try { db = JSON.parse(localStorage.getItem(DB_KEY)) || defaults(); } catch (e) { db = defaults(); }
+db.st = Object.assign({lang: 'en', tz: 6, night: true, sound: true, marks: true}, db.st || {});
+const save = () => { try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch (e) {} };
+
+/* ---------------- time helpers (selected timezone) ---------------- */
+const shiftMs = () => db.st.tz * 3600000;
+const D = ms => new Date(ms + shiftMs());
+const clock = (ms, sec = true) => { const d = D(ms); return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}` + (sec ? ':' + pad(d.getUTCSeconds()) : ''); };
+const dtime = ms => { if (!ms) return '-'; const d = D(ms); return `${pad(d.getUTCDate())} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()} ${clock(ms)}`; };
+const tzLabel = () => 'UTC' + (db.st.tz < 0 ? '-' : '+') + pad(Math.abs(Math.trunc(db.st.tz))) + ':' + pad(Math.round(Math.abs(db.st.tz % 1) * 60));
+const fmtT = s => [Math.floor(s / 3600), Math.floor(s % 3600 / 60), s % 60].map(pad).join(':');
+
+/* ---------------- state ---------------- */
+let sym = 'BTCUSDT', tf = '1m', di = 2, view = 'trade', tab = 'open', pendingOn = false;
+let live = {}, t24 = {}, all = [], last = null, loadSeq = 0, loadingOld = false, noMore = false, lines = {};
+let ws = null, wsOk = false, wsHost = 0, restHost = 0;
+
+/* ---------------- toast / sound ---------------- */
+function toast(msg, ok = true) {
+  const t = $('#toast'); t.textContent = msg; t.style.background = ok ? '#15803d' : '#b91c1c'; t.style.display = 'block';
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 3200);
+}
+let actx;
+function beep(win) {
+  if (!db.st.sound) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = win ? 880 : 220; o.type = 'sine'; g.gain.value = .06;
+    o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + .18);
+  } catch (e) {}
+}
+
+/* ---------------- chart ---------------- */
+const chart = LightweightCharts.createChart($('#chart'), {
+  layout: {background: {color: '#111827'}, textColor: '#94A3B8'},
+  grid: {vertLines: {color: '#1a2335'}, horzLines: {color: '#1a2335'}},
+  rightPriceScale: {borderColor: '#263043'},
+  timeScale: {timeVisible: true, secondsVisible: false, rightOffset: 8, borderColor: '#263043'},
+  crosshair: {vertLine: {color: '#8B5CF6', labelBackgroundColor: '#7C3AED'}, horzLine: {color: '#8B5CF6', labelBackgroundColor: '#7C3AED'}},
+  autoSize: true
+});
+const series = chart.addCandlestickSeries({upColor: '#22C55E', downColor: '#EF4444', borderVisible: false, wickUpColor: '#22C55E', wickDownColor: '#EF4444'});
+function applyChartTime() {
+  chart.applyOptions({
+    localization: {timeFormatter: t => dtime(t * 1000)},
+    timeScale: {tickMarkFormatter: (t, type) => {
+      const d = D(t * 1000);
+      if (type === 0) return String(d.getUTCFullYear());
+      if (type === 1) return MON[d.getUTCMonth()];
+      if (type === 2) return pad(d.getUTCDate()) + ' ' + MON[d.getUTCMonth()];
+      return clock(t * 1000, type === 4);
+    }}
+  });
+}
+
+async function rest(path, params) {
+  const qs = new URLSearchParams(params).toString();
+  let err;
+  for (let i = 0; i < REST.length; i++) {
+    const b = REST[(restHost + i) % REST.length];
+    try { const r = await fetch(b + path + '?' + qs); if (r.ok) { restHost = (restHost + i) % REST.length; return await r.json(); } err = new Error('HTTP ' + r.status); }
+    catch (e) { err = e; }
+  }
+  throw err || new Error('Binance unreachable');
+}
+async function klines(s, iv, limit, before) {
+  const p = {symbol: s, interval: iv, limit};
+  if (before) p.endTime = before * 1000 - 1;
+  return (await rest('/api/v3/klines', p)).map(r => ({time: Math.floor(r[0] / 1000), open: +r[1], high: +r[2], low: +r[3], close: +r[4]}));
+}
+
+
+/* ---------- candle close countdown (current candle er pashe) ---------- */
+function updateCd() {
+  const el = $('#cdl');
+  if (!last || STEP[tf] <= 1) { el.style.display = 'none'; return; }
+  let x = null, y = null;
+  try { x = chart.timeScale().timeToCoordinate(last.time); y = series.priceToCoordinate(last.close); } catch (e) {}
+  if (x === null || y === null) { el.style.display = 'none'; return; }
+  const step = STEP[tf], left = step - (Math.floor(Date.now() / 1000) % step);
+  el.textContent = step >= 3600
+    ? `${pad(Math.floor(left / 3600))}:${pad(Math.floor(left % 3600 / 60))}:${pad(left % 60)}`
+    : `${pad(Math.floor(left / 60))}:${pad(left % 60)}`;
+  el.className = 'cdl ' + (last.close >= last.open ? 'up' : 'down');
+  let axisW = 70; try { axisW = chart.priceScale('right').width() || 70; } catch (e) {}
+  const maxLeft = $('#chartWrap').clientWidth - axisW - 66;
+  el.style.left = Math.max(4, Math.min(x + 28, maxLeft)) + 'px';
+  el.style.top = y + 'px';
+  el.style.display = 'block';
+}
+
+function pushCandle(c) {
+  if (last && c.time < last.time) return;
+  if (all.length && all[all.length - 1].time === c.time) all[all.length - 1] = c; else all.push(c);
+  last = c; series.update(c); updateCd();
+}
+function applyTick(price, tsSec) {
+  if (!last) return;
+  const step = STEP[tf], t = Math.floor(tsSec / step) * step;
+  if (t < last.time) return;
+  if (t > last.time) pushCandle({time: t, open: price, high: price, low: price, close: price});
+  else pushCandle({time: last.time, open: last.open, high: Math.max(last.high, price), low: Math.min(last.low, price), close: price});
+}
+
+async function loadChart() {
+  const seq = ++loadSeq; noMore = false; $('#older').textContent = ''; $('#err').textContent = '';
+  try {
+    const d = await klines(sym, tf, 500);
+    if (seq !== loadSeq) return;
+    all = d; last = all[all.length - 1] || null;
+    series.setData(all); chart.timeScale().fitContent();
+  } catch (e) { $('#err').textContent = 'Binance data load hoy ni: ' + e.message + ' (internet/VPN check korun)'; }
+}
+async function loadOlder() {
+  if (loadingOld || noMore || !all.length) return;
+  loadingOld = true;
+  const seq = loadSeq, first = all[0].time;
+  $('#older').textContent = 'purono data load hochhe...';
+  try {
+    let d = await klines(sym, tf, 1000, first);
+    if (seq !== loadSeq) return;
+    d = d.filter(c => c.time < first);
+    if (!d.length) { noMore = true; $('#older').textContent = 'shobcheye purono data'; return; }
+    const r = chart.timeScale().getVisibleLogicalRange();
+    all = d.concat(all); series.setData(all);
+    if (r) chart.timeScale().setVisibleLogicalRange({from: r.from + d.length, to: r.to + d.length});
+    $('#older').textContent = '';
+  } catch (e) { $('#older').textContent = ''; }
+  finally { loadingOld = false; }
+}
+chart.timeScale().subscribeVisibleLogicalRangeChange(r => { updateCd(); if (r && r.from < 20) loadOlder(); });
+setInterval(updateCd, 200);
+
+/* ---------------- websocket ---------------- */
+function closeWS() { if (ws) { const o = ws; ws = null; o.close(); } }
+function connectWS() {
+  closeWS(); wsOk = false;
+  const s = sym.toLowerCase();
+  const streams = [`${s}@aggTrade`, `${s}@kline_${tf}`, ...SYMS.map(x => x.toLowerCase() + '@miniTicker')].join('/');
+  const sock = new WebSocket(`${WSH[wsHost]}/stream?streams=${streams}`);
+  ws = sock;
+  setConn('connecting...', 'mut');
+  const guard = setTimeout(() => { if (sock === ws && !wsOk) { wsHost = (wsHost + 1) % WSH.length; sock.close(); } }, 6000);
+  sock.onmessage = e => {
+    if (sock !== ws) return;
+    if (!wsOk) { wsOk = true; clearTimeout(guard); setConn('\u25CF LIVE \u00B7 Binance', 'up'); }
+    const m = JSON.parse(e.data), d = m.data;
+    if (m.stream.endsWith('aggTrade')) { const p = +d.p; live[sym] = p; applyTick(p, d.T / 1000); $('#lp').textContent = fmt(p, pd(p)); }
+    else if (m.stream.includes('@kline_')) { const k = d.k; pushCandle({time: Math.floor(k.t / 1000), open: +k.o, high: +k.h, low: +k.l, close: +k.c}); }
+    else { t24[d.s] = {c: +d.c, o: +d.o, h: +d.h, l: +d.l}; if (d.s !== sym) live[d.s] = +d.c; }
+  };
+  sock.onerror = () => { if (sock === ws) setConn('\u25CF reconnecting...', 'warn'); };
+  sock.onclose = () => { clearTimeout(guard); if (sock === ws) { wsOk = false; setConn('\u25CF offline - reconnecting', 'down'); setTimeout(() => { if (sock === ws) connectWS(); }, 2500); } };
+}
+function setConn(t, c) { const el = $('#conn'); el.textContent = t; el.className = 'conn ' + c; }
+
+/* ---------------- header / balance ---------------- */
+const openMargin = () => db.trades.filter(t => t.status === 'open').reduce((a, t) => a + t.amount, 0) + db.pending.reduce((a, t) => a + t.amount, 0);
+function renderBalance() {
+  const b = '$' + fmt(db.balance);
+  $('#bal').textContent = b; $('#acctMenuBal').textContent = b; $('#aBal').textContent = b; $('#pBal').textContent = b;
+  $('#aEq').textContent = '$' + fmt(db.balance + openMargin());
+}
+
+/* ---------------- order panel ---------------- */
+function renderPanel() {
+  const P = PAIRS[sym], a = parseFloat($('#amt').value) || 0;
+  $('#chName').textContent = P.n; $('#pName').textContent = P.n; $('#chCoin').textContent = P.n[0]; $('#pCoin').textContent = P.n[0];
+  $('#chPay').textContent = P.p + '%'; $('#pPct').textContent = P.p + '%';
+  $('#payVal').textContent = '$' + fmt(a * (1 + P.p / 100));
+  $('#buyS').textContent = 'Higher \u00B7 +$' + fmt(a * P.p / 100);
+  $('#sellS').textContent = 'Lower \u00B7 +$' + fmt(a * P.p / 100);
+  $('#timeVal').textContent = fmtT(DURS[di]);
+}
+function setAmt(v) { $('#amt').value = Math.max(1, +(+v).toFixed(2)); renderPanel(); }
+
+function createTrade(dir, amount, dur, price, sy) {
+  const now = Date.now();
+  const t = {id: now + '' + Math.floor(Math.random() * 1000), sym: sy, dir, amount, payout: PAIRS[sy].p, dur, entry: price, open: now, exp: now + dur * 1000, status: 'open', profit: null, exit: null};
+  db.trades.unshift(t); return t;
+}
+function placeOrder(dir) {
+  const amount = parseFloat($('#amt').value), dur = DURS[di], price = live[sym];
+  if (!(amount >= 1)) return toast('Minimum investment $1', false);
+  if (amount > db.balance) return toast('Balance kom ache', false);
+  if (pendingOn) {
+    const v = $('#pendTime').value; if (!v) return toast('Pending trade er somoy din', false);
+    const [h, m] = v.split(':').map(Number), n = new Date();
+    let at = new Date(n.getFullYear(), n.getMonth(), n.getDate(), h, m, 0).getTime();
+    if (at <= Date.now()) at += 86400000;
+    db.balance = +(db.balance - amount).toFixed(2);
+    db.pending.push({id: 'p' + Date.now(), sym, dir, amount, dur, at});
+    save(); renderBalance(); renderTrades(); toast('Pending trade set: ' + clock(at) + ' ' + tzLabel());
+    return;
+  }
+  if (!price) return toast('Price load hochhe, ekto opekkha korun', false);
+  db.balance = +(db.balance - amount).toFixed(2);
+  createTrade(dir, amount, dur, price, sym);
+  save(); tab = 'open'; syncTab(); renderBalance(); renderTrades(); syncLines();
+}
+
+/* ---------------- settle ---------------- */
+function settle(t, exit) {
+  if (t.status !== 'open') return;
+  let st, profit, credit;
+  if (exit === t.entry) { st = 'tie'; profit = 0; credit = t.amount; }
+  else {
+    const win = t.dir === 'up' ? exit > t.entry : exit < t.entry;
+    st = win ? 'won' : 'lost'; profit = win ? +(t.amount * t.payout / 100).toFixed(2) : -t.amount; credit = win ? t.amount + profit : 0;
+  }
+  t.status = st; t.exit = exit; t.profit = profit; t.closedAt = Date.now();
+  db.balance = +(db.balance + credit).toFixed(2);
+  const msg = st === 'won' ? `WIN ${sgn(profit)}` : st === 'lost' ? `LOSS ${sgn(profit)}` : 'TIE - amount ferot';
+  db.notifs.unshift({ts: Date.now(), text: `${PAIRS[t.sym].n} ${t.dir === 'up' ? 'Buy' : 'Sell'}: ${msg}`, ok: st !== 'lost', read: false});
+  db.notifs = db.notifs.slice(0, 40);
+  toast(msg, st !== 'lost'); beep(st !== 'lost');
+  save(); renderAll(); syncLines();
+}
+const settling = {};
+async function settleLate(t) {          // page reload er por expire hoye jaoa trade
+  if (settling[t.id]) return; settling[t.id] = 1;
+  try {
+    const d = await rest('/api/v3/klines', {symbol: t.sym, interval: '1s', endTime: t.exp, limit: 1});
+    const r = d[0]; settle(t, +(r ? (r[0] === t.exp ? r[1] : r[4]) : live[t.sym]));
+  } catch (e) { if (live[t.sym]) settle(t, live[t.sym]); else delete settling[t.id]; }
+}
+setInterval(() => {
+  const now = Date.now();
+  db.pending.filter(p => p.at <= now).forEach(p => {
+    if (!live[p.sym]) return;
+    db.pending = db.pending.filter(x => x.id !== p.id);
+    createTrade(p.dir, p.amount, p.dur, live[p.sym], p.sym); save(); renderAll(); syncLines();
+  });
+  db.trades.filter(t => t.status === 'open' && t.exp <= now).forEach(t => {
+    if (now - t.exp > 8000) settleLate(t); else if (live[t.sym]) settle(t, live[t.sym]);
+  });
+}, 250);
+
+/* ---------------- trades list ---------------- */
+function syncTab() { $('#tabOpen').classList.toggle('on', tab === 'open'); $('#tabClosed').classList.toggle('on', tab === 'closed'); }
+const dirIcon = d => d === 'up' ? '<span class="up">&#9650;</span>' : '<span class="down">&#9660;</span>';
+function renderTrades() {
+  const now = Date.now(), open = db.trades.filter(t => t.status === 'open'), closed = db.trades.filter(t => t.status !== 'open');
+  $('#nOpen').textContent = open.length + db.pending.length; $('#nClosed').textContent = closed.length;
+  let h = '';
+  if (tab === 'open') {
+    h += db.pending.map(p => `<div class="tr"><div class="h"><b>${PAIRS[p.sym].n} ${dirIcon(p.dir)}</b><span class="tag pending">PENDING</span></div>
+      <div class="b"><span>$${fmt(p.amount)} &middot; ${fmtT(p.dur).slice(3)} &middot; opens ${clock(p.at)}</span><button class="xbtn" data-cancel="${p.id}">cancel</button></div></div>`).join('');
+    h += open.map(t => {
+      const cur = live[t.sym] ?? t.entry, win = t.dir === 'up' ? cur > t.entry : cur < t.entry, lose = t.dir === 'up' ? cur < t.entry : cur > t.entry;
+      const st = win ? `<span class="up">+$${fmt(t.amount * t.payout / 100)}</span>` : lose ? `<span class="down">-$${fmt(t.amount)}</span>` : '<span class="mut">$0.00</span>';
+      const left = Math.ceil((t.exp - now) / 1000);
+      return `<div class="tr"><div class="h"><b>${PAIRS[t.sym].n} ${dirIcon(t.dir)}</b><b class="cd">${left > 0 ? fmtT(left).slice(3) : 'settle...'}</b></div>
+        <div class="b"><span>$${fmt(t.amount)} &middot; ${fmt(t.entry, pd(t.entry))} &rarr; ${fmt(cur, pd(cur))}</span>${st}</div></div>`;
+    }).join('');
+    if (!h) h = '<div class="empty">Kono trade cholche na.<br>Buy ba Sell chapen.</div>';
+  } else {
+    h = closed.slice(0, 30).map(t => `<div class="tr"><div class="h"><b>${PAIRS[t.sym].n} ${dirIcon(t.dir)}</b><span class="tag ${t.status}">${t.status === 'won' ? 'WIN' : t.status === 'lost' ? 'LOSS' : 'TIE'}</span></div>
+      <div class="b"><span>${dtime(t.closedAt)} &middot; $${fmt(t.amount)}</span><b class="${cls(t.profit)}">${sgn(t.profit)}</b></div></div>`).join('') || '<div class="empty">Ekhono kono closed trade nei.</div>';
+  }
+  $('#tlist').innerHTML = h;
+  open.forEach(t => { const l = lines[t.id]; if (l) l.applyOptions({title: `${t.dir === 'up' ? 'BUY' : 'SELL'} ${fmtT(Math.max(0, Math.ceil((t.exp - now) / 1000))).slice(3)}`}); });
+}
+setInterval(() => { if (tab === 'open') renderTrades(); }, 250);
+
+function syncLines() {
+  const mine = db.trades.filter(t => t.status === 'open' && t.sym === sym && db.st.marks), keep = new Set();
+  mine.forEach(t => {
+    keep.add(t.id);
+    if (!lines[t.id]) lines[t.id] = series.createPriceLine({price: t.entry, color: t.dir === 'up' ? '#22C55E' : '#EF4444', lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: ''});
+  });
+  Object.keys(lines).forEach(id => { if (!keep.has(id)) { series.removePriceLine(lines[id]); delete lines[id]; } });
+  const step = STEP[tf];
+  series.setMarkers(mine.map(t => ({time: Math.floor(t.open / 1000 / step) * step, position: t.dir === 'up' ? 'belowBar' : 'aboveBar',
+    color: t.dir === 'up' ? '#22C55E' : '#EF4444', shape: t.dir === 'up' ? 'arrowUp' : 'arrowDown'})).sort((a, b) => a.time - b.time));
+}
+function clearLines() { Object.values(lines).forEach(l => series.removePriceLine(l)); lines = {}; series.setMarkers([]); }
+
+/* ---------------- views ---------------- */
+function stats() {
+  const c = db.trades.filter(t => t.status !== 'open'), w = c.filter(t => t.status === 'won').length, l = c.filter(t => t.status === 'lost').length;
+  const net = c.reduce((a, t) => a + t.profit, 0), day = new Date(Date.now() + shiftMs()); day.setUTCHours(0, 0, 0, 0);
+  const start = day.getTime() - shiftMs(), today = c.filter(t => t.closedAt >= start).reduce((a, t) => a + t.profit, 0);
+  return {c, w, l, net, today, rate: (w + l) ? w / (w + l) * 100 : 0};
+}
+function renderAccount() {
+  const s = stats(); $('#uid').textContent = '#' + db.uid;
+  $('#aToday').textContent = sgn(s.today); $('#aToday').className = cls(s.today); $('#aRate').textContent = s.rate.toFixed(1) + '%'; $('#pRef').textContent = db.refills;
+  $('#payBody').innerHTML = db.payments.slice().reverse().map(p => `<tr><td>${dtime(p.ts)}</td><td>${p.type}</td><td class="up">+$${fmt(p.amount)}</td><td><span class="tag won">DONE</span></td></tr>`).join('');
+}
+function renderHistory() {
+  const rows = db.trades.filter(t => t.status !== 'open');
+  $('#histBody').innerHTML = rows.slice(0, 200).map(t => `<tr><td>${dtime(t.closedAt)}</td><td>${PAIRS[t.sym].n}</td><td>${dirIcon(t.dir)} ${t.dir === 'up' ? 'Buy' : 'Sell'}</td><td>${fmtT(t.dur).slice(3)}</td><td>$${fmt(t.amount)}</td>
+    <td>${fmt(t.entry, pd(t.entry))}</td><td>${fmt(t.exit, pd(t.exit))}</td><td><span class="tag ${t.status}">${t.status === 'won' ? 'WIN' : t.status === 'lost' ? 'LOSS' : 'TIE'}</span></td><td class="${cls(t.profit)}">${sgn(t.profit)}</td></tr>`).join('')
+    || '<tr><td colspan="9" class="empty">Ekhono kono trade nei</td></tr>';
+}
+function renderMarket() {
+  $('#mktBody').innerHTML = SYMS.map(s => {
+    const t = t24[s], p = live[s] ?? (t && t.c), ch = t ? (t.c - t.o) / t.o * 100 : 0;
+    return `<tr><td><b>${PAIRS[s].n}</b></td><td>${p ? fmt(p, pd(p)) : '-'}</td><td class="${cls(ch)}">${t ? (ch > 0 ? '+' : '') + ch.toFixed(2) + '%' : '-'}</td>
+      <td>${t ? fmt(t.h, pd(t.h)) : '-'}</td><td>${t ? fmt(t.l, pd(t.l)) : '-'}</td><td class="warn">${PAIRS[s].p}%</td><td><button class="btn brand" style="padding:5px 14px" data-pick="${s}">Trade</button></td></tr>`;
+  }).join('');
+}
+function renderAnalytics() {
+  const s = stats(), c = s.c.slice().reverse();
+  $('#anTotal').textContent = c.length; $('#anRate').textContent = s.rate.toFixed(1) + '%';
+  $('#anNet').textContent = sgn(s.net); $('#anNet').className = cls(s.net);
+  const best = c.length ? Math.max(...c.map(t => t.profit)) : 0, worst = c.length ? Math.min(...c.map(t => t.profit)) : 0;
+  $('#anBW').innerHTML = `<span class="up">${sgn(best)}</span> / <span class="down">${sgn(worst)}</span>`;
+  let cum = 0; const pts = [0].concat(c.map(t => (cum += t.profit)));
+  const mn = Math.min(...pts), mx = Math.max(...pts), rg = (mx - mn) || 1;
+  const xy = pts.map((v, i) => `${(pts.length < 2 ? 0 : i / (pts.length - 1) * 600).toFixed(1)},${(195 - (v - mn) / rg * 180).toFixed(1)}`).join(' ');
+  $('#eqSvg').innerHTML = `<line x1="0" x2="600" y1="${195 - (0 - mn) / rg * 180}" y2="${195 - (0 - mn) / rg * 180}" stroke="#263043" stroke-dasharray="4"/>` +
+    (pts.length > 1 ? `<polyline fill="none" stroke="${cum >= 0 ? '#22C55E' : '#EF4444'}" stroke-width="2.5" points="${xy}"/>` : '<text x="300" y="105" fill="#94A3B8" text-anchor="middle">Trade korle curve ekhane dekhabe</text>');
+  const by = {}; s.c.forEach(t => { const o = by[t.sym] = by[t.sym] || {n: 0, w: 0, p: 0}; o.n++; if (t.status === 'won') o.w++; o.p += t.profit; });
+  $('#anPair').innerHTML = Object.keys(by).map(k => `<tr><td>${PAIRS[k].n}</td><td>${by[k].n}</td><td>${by[k].w}</td><td>${(by[k].w / by[k].n * 100).toFixed(0)}%</td><td class="${cls(by[k].p)}">${sgn(by[k].p)}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">Data nei</td></tr>';
+}
+const TOURS = [
+  {n: 'Daily Practice Cup', d: 'Ajker shobcheye beshi profit', p: '$500 virtual', t: '24h'},
+  {n: 'Weekly Crypto Sprint', d: 'BTC/ETH only, 7 din', p: '$5,000 virtual', t: '7d'},
+  {n: 'Rookie League', d: 'Notun trader der jonno', p: '$1,000 virtual', t: '3d'}
+];
+function renderTours() {
+  const joined = db.joined || [];
+  $('#tourGrid').innerHTML = TOURS.map((t, i) => `<div class="card tour"><span class="tag tie badge">PREVIEW</span><h3>${t.n}</h3><p class="mut">${t.d}</p>
+    <div class="row"><span class="mut">Prize pool</span><b class="warn">${t.p}</b></div><div class="row"><span class="mut">Duration</span><b>${t.t}</b></div>
+    <button class="btn ${joined.includes(i) ? 'gray' : 'brand'}" style="width:100%;margin-top:12px" data-join="${i}">${joined.includes(i) ? 'Joined \u2713' : 'Join'}</button></div>`).join('');
+}
+function renderNotifs() {
+  const unread = db.notifs.filter(n => !n.read).length, dot = $('#bellDot');
+  dot.style.display = unread ? 'grid' : 'none'; dot.textContent = unread;
+  $('#notifList').innerHTML = db.notifs.slice(0, 12).map(n => `<div class="it" style="cursor:default"><span class="${n.ok ? 'up' : 'down'}">${n.text}</span><span class="mut" style="font-size:11px">${clock(n.ts, false)}</span></div>`).join('') || '<div class="empty" style="padding:20px">Kono notification nei</div>';
+}
+function renderAll() { renderBalance(); renderTrades(); renderAccount(); renderNotifs(); if (view === 'trades') renderHistory(); if (view === 'analytics') renderAnalytics(); }
+
+function go(v) {
+  view = v;
+  $$('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + v));
+  $$('.nv[data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === v));
+  $$('.st').forEach(b => b.classList.toggle('on', b.dataset.go === v));
+  $('#shell').classList.toggle('nopanel', v !== 'trade' && v !== 'market');
+  closeMenus();
+  if (v === 'trades') renderHistory();
+  if (v === 'analytics') renderAnalytics();
+  if (v === 'market') renderMarket();
+  if (v === 'tournaments') renderTours();
+  if (v === 'account' || v === 'payments') renderAccount();
+}
+
+/* ---------------- menus / modals ---------------- */
+function closeMenus(except) { $$('.menu').forEach(m => { if (m !== except) m.classList.remove('open'); }); }
+function toggleMenu(id, e) { e.stopPropagation(); const m = $(id), was = m.classList.contains('open'); closeMenus(); if (!was) m.classList.add('open'); return !was; }
+document.addEventListener('click', e => { if (!e.target.closest('.menu') ) closeMenus(); });
+const openModal = id => { closeMenus(); $(id).classList.add('open'); };
+const closeModals = () => $$('.modal').forEach(m => m.classList.remove('open'));
+$$('[data-close]').forEach(b => b.addEventListener('click', closeModals));
+$$('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeModals(); }));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModals(); closeMenus(); } });
+function info(t, html) { $('#infoT').textContent = t; $('#infoB').innerHTML = html; openModal('#mInfo'); }
+
+function openPairMenu(anchor, e) {
+  e.stopPropagation();
+  const m = $('#pairMenu'), was = m.classList.contains('open'); closeMenus();
+  if (was) return;
+  m.innerHTML = '<h4>Select pair</h4>' + SYMS.map(s => { const p = live[s]; return `<button class="pm ${s === sym ? 'on' : ''}" data-pick="${s}"><span style="display:flex;align-items:center;gap:9px"><span class="coin" style="width:24px;height:24px;font-size:11px">${PAIRS[s].n[0]}</span><b>${PAIRS[s].n}</b></span><span style="text-align:right"><span class="mut" style="font-size:12px">${p ? fmt(p, pd(p)) : ''}</span> <b class="warn">${PAIRS[s].p}%</b></span></button>`; }).join('');
+  const r = anchor.getBoundingClientRect();
+  m.style.left = Math.min(r.left, innerWidth - 316) + 'px'; m.style.top = (r.bottom + 8) + 'px'; m.classList.add('open');
+}
+function pick(s) {
+  sym = s; closeMenus(); renderPanel(); $('#lp').textContent = live[s] ? fmt(live[s], pd(live[s])) : '-';
+  clearLines(); last = null; all = []; loadChart().then(() => { connectWS(); syncLines(); });
+  if (view !== 'trade') go('trade');
+}
+
+/* ---------------- settings ---------------- */
+function applySettings() {
+  document.body.classList.toggle('soft', !db.st.night);
+  $('#setNight').classList.toggle('on', db.st.night); $('#setSound').classList.toggle('on', db.st.sound); $('#setMarks').classList.toggle('on', db.st.marks);
+  $('#setLang').value = db.st.lang; $('#setTz').value = String(db.st.tz);
+  const dict = I18N[db.st.lang] || I18N.en;
+  $$('[data-i18n]').forEach(el => { el.textContent = dict[el.dataset.i18n] || el.textContent; });
+  $$('.st').forEach(b => { const k = b.dataset.go; if (dict[k]) b.textContent = dict[k]; });
+  $('#clk').textContent = '';
+  applyChartTime(); syncLines(); renderAll();
+}
+(function buildTz() {
+  let o = '';
+  for (let h = -12; h <= 14; h++) o += `<option value="${h}">UTC${h < 0 ? '-' : '+'}${pad(Math.abs(h))}:00</option>`;
+  $('#setTz').innerHTML = o;
+})();
+
+/* ---------------- events ---------------- */
+$$('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+$('#acctBtn').addEventListener('click', e => toggleMenu('#acctMenu', e));
+$('#bellBtn').addEventListener('click', e => { if (toggleMenu('#bellMenu', e)) { db.notifs.forEach(n => n.read = true); save(); setTimeout(renderNotifs, 800); } });
+$('#helpBtn').addEventListener('click', e => toggleMenu('#helpMenu', e));
+$('#joinBtn').addEventListener('click', e => toggleMenu('#joinMenu', e));
+$('#setBtn').addEventListener('click', () => openModal('#mSettings'));
+$('#depBtn').addEventListener('click', () => openModal('#mRefill'));
+$('#wdBtn').addEventListener('click', () => go('withdrawal'));
+$('#refillBtn2').addEventListener('click', () => openModal('#mRefill'));
+$('#acctMenu').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b && b.dataset.act === 'refill') openModal('#mRefill'); });
+$('#helpMenu').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  if (b.dataset.act === 'keys') info('Keyboard shortcuts', '<p><b>B</b> - Buy (Higher)</p><p><b>S</b> - Sell (Lower)</p><p><b>+ / -</b> - Investment barano/komano</p><p><b>Esc</b> - popup bondho</p>');
+  if (b.dataset.act === 'how') info('Demo trading kivabe kaj kore', '<p>Balance virtual. Price real Binance Spot market theke live ashe. Entry price = click korar shomoyer price. Somoy shesh hole expiry price entry er sathe tulona hoy: jitle payout %, harle amount khoti.</p>');
+});
+$('#refillGo').addEventListener('click', () => { db.balance = 10000; db.refills++; db.payments.push({ts: Date.now(), type: 'Demo refill', amount: 10000}); save(); closeModals(); renderAll(); toast('Demo balance $10,000 kora hoyeche'); });
+$('#resetBtn').addEventListener('click', () => { if (confirm('Shob data muche notun kore shuru hobe. Thik ache?')) { const st = db.st; db = defaults(); db.st = st; save(); clearLines(); renderAll(); applySettings(); toast('Reset hoyeche'); } });
+$('#setLang').addEventListener('change', e => { db.st.lang = e.target.value; save(); applySettings(); });
+$('#setTz').addEventListener('change', e => { db.st.tz = +e.target.value; save(); applySettings(); });
+$('#setNight').addEventListener('click', () => { db.st.night = !db.st.night; save(); applySettings(); });
+$('#setSound').addEventListener('click', () => { db.st.sound = !db.st.sound; save(); applySettings(); });
+$('#setMarks').addEventListener('click', () => { db.st.marks = !db.st.marks; save(); if (!db.st.marks) clearLines(); applySettings(); });
+
+$('#chartPair').addEventListener('click', e => openPairMenu($('#chartPair'), e));
+$('#panelPair').addEventListener('click', e => openPairMenu($('#panelPair'), e));
+document.addEventListener('click', e => { const b = e.target.closest('[data-pick]'); if (b) pick(b.dataset.pick); });
+document.addEventListener('click', e => {
+  const j = e.target.closest('[data-join]'); if (j) { db.joined = db.joined || []; const i = +j.dataset.join; db.joined = db.joined.includes(i) ? db.joined.filter(x => x !== i) : db.joined.concat(i); save(); renderTours(); }
+  const c = e.target.closest('[data-cancel]'); if (c) { const p = db.pending.find(x => x.id === c.dataset.cancel); if (p) { db.balance = +(db.balance + p.amount).toFixed(2); db.pending = db.pending.filter(x => x !== p); save(); renderAll(); } }
+});
+$('#tfs').addEventListener('click', e => { const b = e.target.closest('[data-tf]'); if (!b) return; tf = b.dataset.tf; $$('#tfs button').forEach(x => x.classList.toggle('on', x === b)); clearLines(); last = null; all = []; loadChart().then(() => { connectWS(); syncLines(); }); });
+
+$('#tMinus').addEventListener('click', () => { di = Math.max(0, di - 1); renderPanel(); });
+$('#tPlus').addEventListener('click', () => { di = Math.min(DURS.length - 1, di + 1); renderPanel(); });
+const stepOf = a => a >= 100 ? 10 : a >= 20 ? 5 : 1;
+$('#aMinus').addEventListener('click', () => { const a = parseFloat($('#amt').value) || 1; setAmt(a - stepOf(a - 1)); });
+$('#aPlus').addEventListener('click', () => { const a = parseFloat($('#amt').value) || 1; setAmt(a + stepOf(a)); });
+$('#amt').addEventListener('input', renderPanel);
+$$('.chips button').forEach(b => b.addEventListener('click', () => setAmt(b.dataset.a === 'max' ? Math.max(1, Math.floor(db.balance)) : b.dataset.a)));
+$('#pendSw').addEventListener('click', () => {
+  pendingOn = !pendingOn; $('#pendSw').classList.toggle('on', pendingOn); $('#pendRow').style.display = pendingOn ? 'block' : 'none';
+  if (pendingOn && !$('#pendTime').value) { const n = new Date(Date.now() + 60000); $('#pendTime').value = pad(n.getHours()) + ':' + pad(n.getMinutes()); }
+});
+$('#buyBtn').addEventListener('click', () => placeOrder('up'));
+$('#sellBtn').addEventListener('click', () => placeOrder('down'));
+$('#tabOpen').addEventListener('click', () => { tab = 'open'; syncTab(); renderTrades(); });
+$('#tabClosed').addEventListener('click', () => { tab = 'closed'; syncTab(); renderTrades(); });
+$('#supSend').addEventListener('click', () => { if (!$('#supMsg').value.trim()) return toast('Message likhun', false); $('#supMsg').value = ''; $('#supSub').value = ''; toast('Message pathano hoyeche (demo)'); });
+document.addEventListener('keydown', e => {
+  if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || view !== 'trade') return;
+  if (e.key === 'b' || e.key === 'B') placeOrder('up');
+  else if (e.key === 's' || e.key === 'S') placeOrder('down');
+  else if (e.key === '+') $('#aPlus').click(); else if (e.key === '-') $('#aMinus').click();
+});
+
+/* ---------------- clock + ticker + market refresh ---------------- */
+setInterval(() => {
+  const now = Date.now(), step = STEP[tf], left = step - (Math.floor(now / 1000) % step);
+  $('#clk').textContent = `${clock(now)} ${tzLabel()}  \u00B7  candle close ${pad(Math.floor(left / 60))}:${pad(left % 60)}`;
+  $('#tickrow').innerHTML = SYMS.filter(s => live[s]).map(s => `<span>${s.replace('USDT', '')} <b>${fmt(live[s], pd(live[s]))}</b></span>`).join('');
+  if (view === 'market') renderMarket();
+  renderBalance();
+}, 1000);
+
+/* ---------------- boot ---------------- */
+renderPanel(); applySettings(); syncTab(); go('trade');
+loadChart().then(() => { connectWS(); syncLines(); });
+})();
+</script>
+</body>
+</html>
