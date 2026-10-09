@@ -53,3 +53,58 @@ body {
     @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold;
   }
 }
+
+/* ===== Trading Terminal (Quotex-style) ===== */
+@keyframes qt-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 176, 80, 0.0); }
+  50% { box-shadow: 0 8px 28px 0 rgba(0, 176, 80, 0.35); }
+}
+@keyframes qt-glow-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(214, 62, 62, 0.0); }
+  50% { box-shadow: 0 8px 28px 0 rgba(214, 62, 62, 0.32); }
+}
+@keyframes qt-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.82); }
+}
+@keyframes qt-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.qt-shell {
+  background: radial-gradient(1200px 600px at 30% -10%, #0e1730 0%, #080c15 55%, #060910 100%);
+}
+.qt-panel {
+  background: linear-gradient(180deg, #111726 0%, #0e1421 100%);
+  border: 1px solid #26314a;
+}
+.qt-up-btn {
+  background: linear-gradient(180deg, #06c65c 0%, #00b050 100%);
+  color: #04120a;
+  box-shadow: 0 10px 30px -6px rgba(0, 176, 80, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.qt-up-btn:hover { animation: qt-glow 1.6s ease-in-out infinite; filter: brightness(1.05); }
+.qt-down-btn {
+  background: linear-gradient(180deg, #e85252 0%, #d63e3e 100%);
+  color: #fff;
+  box-shadow: 0 10px 30px -6px rgba(214, 62, 62, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.qt-down-btn:hover { animation: qt-glow-red 1.6s ease-in-out infinite; filter: brightness(1.05); }
+.qt-accent-btn {
+  background: linear-gradient(180deg, #2e7bff 0%, #0066ff 100%);
+  box-shadow: 0 8px 24px -8px rgba(0, 102, 255, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.qt-live-dot { animation: qt-pulse 1.4s ease-in-out infinite; }
+.qt-watermark {
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  color: rgba(255, 255, 255, 0.035);
+  user-select: none;
+  pointer-events: none;
+}
+.qt-gauge {
+  background: linear-gradient(180deg, #00b050 0%, #00b050 96%, #d63e3e 96%, #d63e3e 100%);
+}
+.qt-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.qt-scroll::-webkit-scrollbar-thumb { background: #2a3550; border-radius: 6px; }
