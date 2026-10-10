@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { TerminalHeader } from '@/components/terminal/terminal-header';
 import { TerminalSidebar } from '@/components/terminal/terminal-sidebar';
 import { TerminalChart } from '@/components/terminal/terminal-chart';
@@ -15,7 +15,6 @@ function pad(n: number) {
 }
 
 function TerminalInner() {
-  const router = useRouter();
   const params = useSearchParams();
   const { token } = useAuth();
   const { tickers, status } = useBinanceTickers();
@@ -44,14 +43,6 @@ function TerminalInner() {
       )
       .catch(() => undefined);
   }, [token]);
-
-  const onSymbolChange = useCallback(
-    (next: string) => {
-      router.replace(`/trade?symbol=${next}`, { scroll: false });
-      setMessage(null);
-    },
-    [router],
-  );
 
   const onTrade = useCallback(
     async (side: 'buy' | 'sell', amount: number, seconds: number) => {
@@ -87,7 +78,7 @@ function TerminalInner() {
         <TerminalSidebar active="trade" />
         <main className="qt-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 lg:flex-row lg:overflow-hidden">
           <div className="flex h-[52vh] min-h-[320px] flex-col lg:h-auto lg:min-h-0 lg:flex-1">
-            <TerminalChart symbol={symbol} onSymbolChange={onSymbolChange} />
+            <TerminalChart symbol={symbol} />
           </div>
           <div className="flex w-full flex-col lg:w-[340px] lg:shrink-0">
             <TerminalActionPanel asset={asset} price={price} trades={trades} message={message} onTrade={onTrade} />

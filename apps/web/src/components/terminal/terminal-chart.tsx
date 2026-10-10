@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { IChartApi, ISeriesApi, CandlestickData, IPriceLine, UTCTimestamp } from 'lightweight-charts';
-import { ASSETS, INTERVALS, STEP, assetOf, fetchKlines, type Interval } from '@/lib/binance';
+import { STEP, assetOf, fetchKlines, type Interval } from '@/lib/binance';
 
 const WSH = ['wss://stream.binance.com:9443', 'wss://data-stream.binance.vision:9443'];
 
@@ -17,24 +17,17 @@ function clockUTC(d = new Date()) {
   return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 }
 
-export function TerminalChart({
-  symbol,
-  onSymbolChange,
-}: {
-  symbol: string;
-  onSymbolChange: (symbol: string) => void;
-}) {
+export function TerminalChart({ symbol }: { symbol: string }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const lastRef = useRef<CandlestickData | null>(null);
   const lineRef = useRef<IPriceLine | null>(null);
 
-  const [interval, setIntervalState] = useState<Interval>('1m');
+  const [interval] = useState<Interval>('1m');
   const [price, setPrice] = useState<number | null>(null);
   const [status, setStatus] = useState<'loading' | 'live' | 'offline'>('loading');
   const [now, setNow] = useState(() => new Date());
-  const [pairOpen, setPairOpen] = useState(false);
 
   const asset = assetOf(symbol);
 
@@ -214,49 +207,6 @@ export function TerminalChart({
 
       {/* top-left overlay */}
       <div className="pointer-events-none absolute left-4 top-4 z-20 flex flex-col gap-2">
-        <div className="pointer-events-auto relative">
-          <button
-            onClick={() => setPairOpen((v) => !v)}
-            className="flex items-center gap-2.5 rounded-xl border border-qt-line bg-qt-bg/90 px-3 py-2 backdrop-blur hover:border-qt-accent"
-          >
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-qt-accent to-[#00E676] text-[13px] font-extrabold text-white">
-              {asset.coin}
-            </span>
-            <span className="text-left leading-tight">
-              <span className="block text-sm font-bold text-white">{asset.label}</span>
-              <span className="block text-[11px] font-bold text-qt-gold">{asset.payout}%</span>
-            </span>
-            <svg viewBox="0 0 24 24" className="h-4 w-4 text-qt-mut" fill="none" stroke="currentColor" strokeWidth={2}>
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-          {pairOpen && (
-            <div className="absolute left-0 top-[calc(100%+8px)] w-72 rounded-xl border border-qt-line bg-qt-panel p-2 shadow-2xl">
-              <p className="px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-qt-mut">Select asset</p>
-              <div className="qt-scroll max-h-72 overflow-y-auto">
-                {ASSETS.map((a) => (
-                  <button
-                    key={a.symbol}
-                    onClick={() => {
-                      onSymbolChange(a.symbol);
-                      setPairOpen(false);
-                    }}
-                    className={`flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm hover:bg-qt-hover ${
-                      a.symbol === symbol ? 'bg-qt-hover' : ''
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span className="grid h-6 w-6 place-items-center rounded-full bg-qt-panel2 text-[10px] font-bold text-white">{a.coin}</span>
-                      <span className="font-semibold text-qt-text">{a.label}</span>
-                    </span>
-                    <span className="font-bold text-qt-gold">{a.payout}%</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
         <span className="w-fit rounded-lg border border-qt-line bg-qt-bg/80 px-2.5 py-1 text-[12px] font-semibold tabular-nums text-qt-mut backdrop-blur">
           {clockUTC(now)} <span className="text-qt-accent">UTC</span>
         </span>
@@ -270,19 +220,6 @@ export function TerminalChart({
       <div className="pointer-events-none absolute left-1/2 top-4 z-20 -translate-x-1/2 text-center">
         <p className="text-2xl font-extrabold tabular-nums text-white drop-shadow">{price != null ? fmtPrice(price) : '—'}</p>
         <p className="text-[10px] font-bold uppercase tracking-widest text-qt-mut">{asset.label}</p>
-      </div>
-
-      {/* interval chips */}
-      <div className="absolute right-4 top-4 z-20 flex items-center gap-1 rounded-lg border border-qt-line bg-qt-bg/85 p-1 backdrop-blur">
-        {INTERVALS.map((iv) => (
-          <button
-            key={iv}
-            onClick={() => setIntervalState(iv)}
-            className={`rounded-md px-2.5 py-1 text-[11px] font-bold ${iv === interval ? 'bg-qt-accent text-white' : 'text-qt-mut hover:text-qt-text'}`}
-          >
-            {iv.toUpperCase()}
-          </button>
-        ))}
       </div>
 
       {/* beginning-of-trade dashed vertical */}
