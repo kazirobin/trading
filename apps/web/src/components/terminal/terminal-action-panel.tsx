@@ -50,7 +50,7 @@ export function TerminalActionPanel({
       <div className="qt-panel rounded-2xl p-4">
         <button className="flex w-full items-center justify-between rounded-xl bg-qt-bg/70 px-3 py-2.5">
           <span className="flex items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-qt-accent to-[#00b050] text-sm font-extrabold text-white">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-qt-accent to-[#00E676] text-sm font-extrabold text-white">
               {asset.coin}
             </span>
             <span className="text-left leading-tight">
@@ -143,7 +143,7 @@ export function TerminalActionPanel({
         <button onClick={() => onTrade('buy', amount, seconds)} className="qt-up-btn mt-3 flex w-full items-center justify-between rounded-xl px-5 py-3.5">
           <span className="text-left leading-tight">
             <span className="block text-lg font-extrabold">Buy</span>
-            <span className="block text-[11px] font-semibold opacity-90">Higher · +${profit.toFixed(2)}</span>
+            <span className="block text-[11px] font-semibold opacity-90">Higher +${profit.toFixed(2)}</span>
           </span>
           <span className="grid h-8 w-8 place-items-center rounded-full bg-black/15">
             <Icon d="M12 19V5M5 12l7-7 7 7" />
@@ -152,7 +152,7 @@ export function TerminalActionPanel({
         <button onClick={() => onTrade('sell', amount, seconds)} className="qt-down-btn mt-2.5 flex w-full items-center justify-between rounded-xl px-5 py-3.5">
           <span className="text-left leading-tight">
             <span className="block text-lg font-extrabold">Sell</span>
-            <span className="block text-[11px] font-semibold opacity-90">Lower · +${profit.toFixed(2)}</span>
+            <span className="block text-[11px] font-semibold opacity-90">Lower -${profit.toFixed(2)}</span>
           </span>
           <span className="grid h-8 w-8 place-items-center rounded-full bg-black/20">
             <Icon d="M12 5v14M5 12l7 7 7-7" />
@@ -168,7 +168,7 @@ export function TerminalActionPanel({
         <div className="flex items-center gap-1 border-b border-qt-line">
           <button
             onClick={() => setTab('trades')}
-            className={`flex items-center gap-1.5 px-3 py-2.5 text-[13px] font-bold ${tab === 'trades' ? 'text-white shadow-[inset_0_-2px_0_#0066ff]' : 'text-qt-mut'}`}
+            className={`flex items-center gap-1.5 px-3 py-2.5 text-[13px] font-bold ${tab === 'trades' ? 'text-white shadow-[inset_0_-2px_0_#2196F3]' : 'text-qt-mut'}`}
           >
             Trades <span className="rounded-full bg-qt-panel2 px-1.5 text-[11px] text-qt-mut">{trades.length}</span>
           </button>
@@ -212,7 +212,7 @@ export function TerminalActionPanel({
         </div>
 
         <p className="pt-2 text-center text-[10px] text-qt-mut">
-          {price != null ? `Live · ${asset.label}` : 'Connecting to market…'}
+          {price != null ? `Live - ${asset.label}` : 'Connecting to market…'}
         </p>
       </div>
     </aside>

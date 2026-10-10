@@ -49,22 +49,22 @@ export function TerminalChart({
       const { createChart, ColorType } = await import('lightweight-charts');
       if (disposed || !wrapRef.current) return;
       const chart = createChart(wrapRef.current, {
-        layout: { background: { type: ColorType.Solid, color: 'rgba(0,0,0,0)' }, textColor: '#8a95a9', fontSize: 11 },
-        grid: { vertLines: { color: '#1b2438' }, horzLines: { color: '#1b2438' } },
-        rightPriceScale: { borderColor: '#26314a', scaleMargins: { top: 0.12, bottom: 0.12 } },
-        timeScale: { timeVisible: true, secondsVisible: false, borderColor: '#26314a', rightOffset: 8, barSpacing: 9 },
+        layout: { background: { type: ColorType.Solid, color: 'rgba(0,0,0,0)' }, textColor: '#B0BEC5', fontSize: 11 },
+        grid: { vertLines: { color: '#242b38' }, horzLines: { color: '#242b38' } },
+        rightPriceScale: { borderColor: '#2B3242', scaleMargins: { top: 0.12, bottom: 0.12 } },
+        timeScale: { timeVisible: true, secondsVisible: false, borderColor: '#2B3242', rightOffset: 8, barSpacing: 9 },
         crosshair: {
-          vertLine: { color: '#0066ff', labelBackgroundColor: '#0066ff' },
-          horzLine: { color: '#0066ff', labelBackgroundColor: '#0066ff' },
+          vertLine: { color: '#2196F3', labelBackgroundColor: '#2196F3' },
+          horzLine: { color: '#2196F3', labelBackgroundColor: '#2196F3' },
         },
         autoSize: true,
       });
       const series = chart.addCandlestickSeries({
-        upColor: '#00b050',
-        downColor: '#d63e3e',
+        upColor: '#00E676',
+        downColor: '#EF5350',
         borderVisible: false,
-        wickUpColor: '#00b050',
-        wickDownColor: '#d63e3e',
+        wickUpColor: '#00E676',
+        wickDownColor: '#EF5350',
         priceLineVisible: false,
         lastValueVisible: false,
       });
@@ -124,7 +124,7 @@ export function TerminalChart({
       else if (seriesRef.current)
         lineRef.current = seriesRef.current.createPriceLine({
           price: p,
-          color: '#0066ff',
+          color: '#2196F3',
           lineWidth: 1,
           lineStyle: 2,
           axisLabelVisible: true,
@@ -208,7 +208,7 @@ export function TerminalChart({
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-qt-line bg-qt-panel">
       {/* watermark + chart */}
       <div className="pointer-events-none absolute inset-0 z-0 grid place-items-center">
-        <span className="qt-watermark text-[16vw] leading-none">DEMO</span>
+        <span className="qt-watermark whitespace-nowrap text-[7vw] leading-none">TRADEVIX</span>
       </div>
       <div ref={wrapRef} className="absolute inset-x-0 bottom-0 top-0 z-10" />
 
@@ -219,7 +219,7 @@ export function TerminalChart({
             onClick={() => setPairOpen((v) => !v)}
             className="flex items-center gap-2.5 rounded-xl border border-qt-line bg-qt-bg/90 px-3 py-2 backdrop-blur hover:border-qt-accent"
           >
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-qt-accent to-[#00b050] text-[13px] font-extrabold text-white">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-qt-accent to-[#00E676] text-[13px] font-extrabold text-white">
               {asset.coin}
             </span>
             <span className="text-left leading-tight">
@@ -261,7 +261,7 @@ export function TerminalChart({
           {clockUTC(now)} <span className="text-qt-accent">UTC</span>
         </span>
 
-        <button className="pointer-events-auto w-fit rounded-lg bg-qt-accent/15 px-2.5 py-1.5 text-[11px] font-bold text-[#5aa0ff] ring-1 ring-inset ring-qt-accent/40 hover:bg-qt-accent/25">
+        <button className="pointer-events-auto w-fit rounded-lg bg-qt-accent/15 px-2.5 py-1.5 text-[11px] font-bold text-[#64b5f6] ring-1 ring-inset ring-qt-accent/40 hover:bg-qt-accent/25">
           PAIR INFORMATION
         </button>
       </div>
@@ -315,8 +315,8 @@ export function TerminalChart({
         </button>
       </div>
 
-      <span className={`absolute bottom-4 right-4 z-20 text-[11px] font-semibold ${status === 'live' ? 'text-qt-up' : status === 'offline' ? 'text-qt-down' : 'text-qt-mut'}`}>
-        ● {status}
+      <span className={`absolute bottom-4 right-4 z-20 text-[11px] font-bold uppercase tracking-wide ${status === 'live' ? 'text-qt-up' : status === 'offline' ? 'text-qt-down' : 'text-qt-mut'}`}>
+        ● {status === 'live' ? 'Live' : status === 'offline' ? 'Offline' : 'Loading'}
       </span>
     </div>
   );

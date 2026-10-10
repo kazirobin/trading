@@ -22,9 +22,9 @@ export const ASSETS: Asset[] = [
 
 export const assetOf = (symbol: string): Asset => ASSETS.find((a) => a.symbol === symbol) ?? ASSETS[0]!;
 
-export const INTERVALS = ['1m', '5m', '15m', '1h'] as const;
+export const INTERVALS = ['1m', '5m', '15m', '1h', '1d'] as const;
 export type Interval = (typeof INTERVALS)[number];
-export const STEP: Record<Interval, number> = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600 };
+export const STEP: Record<Interval, number> = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '1d': 86400 };
 
 const REST = ['https://api.binance.com', 'https://data-api.binance.vision'];
 const WSH = ['wss://stream.binance.com:9443', 'wss://data-stream.binance.vision:9443'];

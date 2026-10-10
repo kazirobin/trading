@@ -22,24 +22,19 @@ export function TerminalHeader({ status }: { status: 'connecting' | 'live' | 'of
         <Icon d="M4 6h16M4 12h16M4 18h16" />
       </button>
 
-      <Link href="/" className="flex items-center gap-2.5">
-        <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-qt-accent to-[#00b050] shadow-[0_6px_20px_-4px_rgba(0,102,255,0.7)]">
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="#fff" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+      <Link href="/" className="flex items-center gap-2 md:hidden">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-qt-accent to-[#00E676]">
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="#fff" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 17l5-6 4 4 8-9" />
             <path d="M15 6h5v5" />
           </svg>
         </span>
-        <span className="leading-none">
-          <span className="block text-[17px] font-extrabold tracking-[0.18em] text-white">TRADEVIX</span>
-          <span className="mt-0.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-qt-mut">
-            <span className={`qt-live-dot h-1.5 w-1.5 rounded-full bg-current ${statusColor}`} />
-            {status === 'live' ? 'Live market' : status === 'offline' ? 'Reconnecting' : 'Connecting'}
-          </span>
-        </span>
+        <span className="text-[15px] font-extrabold tracking-[0.16em] text-white">TRADEVIX</span>
+        <span className={`qt-live-dot h-1.5 w-1.5 rounded-full bg-current ${statusColor}`} />
       </Link>
 
       <div className="ml-2 hidden min-w-0 flex-1 items-center xl:flex">
-        <div className="flex items-center gap-2.5 rounded-xl border border-[#0a7a3c] bg-gradient-to-r from-[#0f9d4f] via-[#0ab24f] to-[#12c260] px-3 py-2 shadow-[0_8px_26px_-8px_rgba(0,176,80,0.8)]">
+        <div className="flex items-center gap-2.5 rounded-xl border border-[#0a9d4f] bg-gradient-to-r from-[#0fae57] via-[#00E676] to-[#12e07e] px-3 py-2 shadow-[0_8px_26px_-8px_rgba(0,230,118,0.8)]">
           <span className="grid h-6 w-6 place-items-center rounded-full bg-black/25 text-white">
             <Icon d="M5 15l4-8 3 5 3-6 4 9" className="h-3.5 w-3.5" />
           </span>
@@ -70,7 +65,7 @@ export function TerminalHeader({ status }: { status: 'connecting' | 'live' | 'of
         </div>
 
         <button className="flex items-center gap-2 rounded-xl border border-qt-line bg-qt-bg px-3 py-1.5 text-left hover:border-qt-accent">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-qt-accent to-[#00b050] text-xs font-extrabold text-white">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-qt-accent to-[#00E676] text-xs font-extrabold text-white">
             {user?.name?.[0]?.toUpperCase() ?? 'T'}
           </span>
           <span className="leading-tight">

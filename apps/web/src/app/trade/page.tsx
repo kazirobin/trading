@@ -83,13 +83,13 @@ function TerminalInner() {
   return (
     <div className="qt-shell flex h-screen w-full flex-col overflow-hidden font-sans text-qt-text">
       <TerminalHeader status={status} />
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <TerminalSidebar active="trade" />
-        <main className="flex min-h-0 flex-1 gap-3 p-3">
-          <div className="flex min-h-0 flex-1 flex-col">
+        <main className="qt-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 lg:flex-row lg:overflow-hidden">
+          <div className="flex h-[52vh] min-h-[320px] flex-col lg:h-auto lg:min-h-0 lg:flex-1">
             <TerminalChart symbol={symbol} onSymbolChange={onSymbolChange} />
           </div>
-          <div className="flex min-h-0 w-[340px] shrink-0 flex-col">
+          <div className="flex w-full flex-col lg:w-[340px] lg:shrink-0">
             <TerminalActionPanel asset={asset} price={price} trades={trades} message={message} onTrade={onTrade} />
           </div>
         </main>
@@ -100,7 +100,7 @@ function TerminalInner() {
 
 export default function TradePage() {
   return (
-    <Suspense fallback={<div className="grid h-screen place-items-center bg-[#080c15] text-qt-mut">Loading terminal…</div>}>
+    <Suspense fallback={<div className="grid h-screen place-items-center bg-qt-bg text-qt-mut">Loading terminal…</div>}>
       <TerminalInner />
     </Suspense>
   );

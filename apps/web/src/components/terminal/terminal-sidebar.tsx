@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 const I = ({ d, className = 'h-[22px] w-[22px]' }: { d: string; className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
     <path d={d} />
@@ -16,22 +18,36 @@ const items = [
 
 export function TerminalSidebar({ active = 'trade' }: { active?: string }) {
   return (
-    <div className="flex h-full shrink-0">
-      <nav className="qt-scroll flex w-[88px] flex-col items-center gap-1 overflow-y-auto border-r border-qt-line bg-qt-panel px-2 py-2">
+    <div className="qt-scroll flex shrink-0 flex-row items-center gap-1 overflow-x-auto border-b border-qt-line bg-qt-panel px-2 py-2 md:w-[74px] md:flex-col md:overflow-y-auto md:overflow-x-hidden md:border-b-0 md:border-r md:py-3 lg:w-[92px]">
+      <Link href="/trade" className="mb-1 hidden w-full flex-col items-center gap-1 border-b border-qt-line pb-3 md:flex">
+        <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-qt-accent to-[#00E676] shadow-[0_8px_22px_-6px_rgba(33,150,243,0.8)]">
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="#fff" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 17l5-6 4 4 8-9" />
+            <path d="M15 6h5v5" />
+          </svg>
+        </span>
+        <span className="hidden text-[11px] font-extrabold tracking-[0.14em] text-white lg:block">TRADEVIX</span>
+        <span className="flex items-center gap-1 text-[8px] font-semibold uppercase tracking-wider text-qt-mut">
+          <span className="qt-live-dot h-1.5 w-1.5 rounded-full bg-qt-up" />
+          Live market
+        </span>
+      </Link>
+
+      <div className="flex flex-row items-center gap-1 md:w-full md:flex-col">
         {items.map((it) => {
           const on = it.key === active;
           return (
             <button
               key={it.key}
               title={it.label}
-              className={`relative flex w-full flex-col items-center gap-1.5 rounded-xl py-3 text-[10px] font-bold tracking-wide transition ${
+              className={`relative flex w-16 flex-col items-center gap-1.5 rounded-xl py-3 text-[10px] font-bold tracking-wide transition md:w-full ${
                 on
-                  ? 'bg-gradient-to-br from-qt-accent to-[#0aa34d] text-white shadow-[0_10px_26px_-8px_rgba(0,102,255,0.9)]'
+                  ? 'bg-gradient-to-br from-qt-accent to-[#00E676] text-white shadow-[0_10px_26px_-8px_rgba(33,150,243,0.9)]'
                   : 'text-qt-mut hover:bg-qt-hover hover:text-qt-text'
               }`}
             >
               <I d={it.icon} />
-              <span>{it.label}</span>
+              <span className="hidden lg:block">{it.label}</span>
               {it.badge && (
                 <span className="absolute right-1.5 top-1.5 grid h-4 w-4 place-items-center rounded-full bg-qt-accent text-[9px] font-bold text-white">
                   {it.badge}
@@ -40,9 +56,11 @@ export function TerminalSidebar({ active = 'trade' }: { active?: string }) {
             </button>
           );
         })}
+      </div>
 
-        <div className="flex-1" />
+      <div className="hidden flex-1 md:block" />
 
+      <div className="hidden w-full flex-col items-center gap-2 md:flex">
         <div className="flex items-center gap-1 rounded-xl bg-qt-bg p-1">
           {['M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z', 'M11 5L6 9H3v6h3l5 4zM16 9a4 4 0 0 1 0 6', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 5 15a1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.8 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z'].map((d) => (
             <button key={d} className="grid h-8 w-8 place-items-center rounded-lg text-qt-mut hover:bg-qt-hover hover:text-qt-text" title="Control">
@@ -55,21 +73,19 @@ export function TerminalSidebar({ active = 'trade' }: { active?: string }) {
           <I d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z" className="h-4 w-4" />
           JOIN US
         </button>
-        <button className="w-full rounded-xl bg-gradient-to-b from-[#06c65c] to-[#00b050] px-2 py-2.5 text-[11px] font-extrabold text-[#04120a] shadow-[0_8px_22px_-8px_rgba(0,176,80,0.9)]">
+        <button className="w-full rounded-xl bg-gradient-to-b from-[#22e884] to-[#00E676] px-2 py-2.5 text-[11px] font-extrabold text-[#04140b] shadow-[0_8px_22px_-8px_rgba(0,230,118,0.9)]">
           Help
         </button>
-      </nav>
 
-      <div className="flex w-[34px] flex-col items-center justify-center gap-2 border-r border-qt-line bg-qt-panel py-4">
-        <span className="text-[8px] font-bold leading-none text-[#0aa34d]" style={{ writingMode: 'vertical-rl' }}>
-          96%
-        </span>
-        <div className="relative h-[58vh] min-h-[220px] w-2 overflow-hidden rounded-full qt-gauge shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
-          <span className="absolute left-1/2 top-[82%] h-3 w-3 -translate-x-1/2 rounded-full border-2 border-white bg-qt-panel shadow" />
+        <div className="w-full px-1 pt-1">
+          <div className="mb-1 flex items-center justify-between text-[8px] font-bold tracking-wide text-qt-mut">
+            <span className="hidden lg:block">WIN RATE</span>
+            <span className="text-qt-up">96%</span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-qt-bg">
+            <div className="h-full rounded-full bg-gradient-to-r from-qt-accent to-qt-up" style={{ width: '96%' }} />
+          </div>
         </div>
-        <span className="text-[8px] font-bold leading-none text-qt-down" style={{ writingMode: 'vertical-rl' }}>
-          4%
-        </span>
       </div>
     </div>
   );
