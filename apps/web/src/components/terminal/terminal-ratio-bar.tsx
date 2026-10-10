@@ -26,17 +26,23 @@ export function TerminalRatioBar({ symbol }: { symbol: string }) {
   }, [symbol]);
 
   return (
-    <aside className="hidden w-10 shrink-0 flex-col items-center gap-2 border-r border-qt-line bg-qt-sidebar py-3 lg:flex" aria-label="Buy / Sell ratio">
-      <span className="text-[10px] font-bold tabular-nums text-qt-up">{ratio.buy}%</span>
-      <div className="relative w-1.5 flex-1 overflow-hidden rounded-full bg-qt-line">
-        <div className="absolute inset-x-0 top-0 bg-qt-up transition-all duration-700" style={{ height: `${ratio.buy}%` }} />
-        <div className="absolute inset-x-0 bottom-0 bg-qt-down transition-all duration-700" style={{ height: `${ratio.sell}%` }} />
+    <aside className="hidden w-9 shrink-0 flex-col items-center gap-2.5 rounded-2xl glass-strong py-3 lg:flex" aria-label="Buy / Sell ratio">
+      <span className="text-[10px] font-extrabold tabular-nums text-emerald-300 drop-shadow-[0_0_6px_rgba(16,185,129,0.6)]">{ratio.buy}%</span>
+      <div className="relative w-2 flex-1 overflow-hidden rounded-full bg-neo-line/40">
+        <div
+          className="absolute inset-x-0 top-0 rounded-full bg-gradient-to-b from-emerald-400 to-teal-500 shadow-[0_0_12px_2px_rgba(16,185,129,0.45)] transition-all duration-700"
+          style={{ height: `${ratio.buy}%` }}
+        />
+        <div
+          className="absolute inset-x-0 bottom-0 rounded-full bg-gradient-to-t from-rose-400 to-rose-500 shadow-[0_0_12px_2px_rgba(255,84,112,0.45)] transition-all duration-700"
+          style={{ height: `${ratio.sell}%` }}
+        />
         <span
-          className="absolute left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full border border-qt-line bg-white shadow-[0_1px_4px_rgba(0,0,0,0.5)] transition-all duration-700"
-          style={{ top: `calc(${ratio.buy}% - 5px)` }}
+          className="absolute left-1/2 h-3 w-3 -translate-x-1/2 rounded-full border-2 border-white bg-neo-bg shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-all duration-700"
+          style={{ top: `calc(${ratio.buy}% - 6px)` }}
         />
       </div>
-      <span className="text-[10px] font-bold tabular-nums text-qt-down">{ratio.sell}%</span>
+      <span className="text-[10px] font-extrabold tabular-nums text-rose-400 drop-shadow-[0_0_6px_rgba(255,84,112,0.6)]">{ratio.sell}%</span>
     </aside>
   );
 }

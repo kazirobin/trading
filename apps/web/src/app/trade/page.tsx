@@ -91,19 +91,17 @@ function TerminalInner() {
   );
 
   return (
-    <div className="qt-shell flex h-dvh w-full flex-col overflow-hidden font-sans text-qt-text">
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+    <div className="flex h-dvh w-full flex-col gap-2 overflow-hidden bg-neo-bg p-2 pb-0 font-sans text-neo-text lg:gap-2.5 lg:p-2.5 lg:pb-0">
+      <TerminalHeader status={status} onMenu={() => setSbOpen((o) => !o)} sidebarOpen={sbOpen} />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-2 lg:flex-row lg:gap-2.5">
         <TerminalSidebar open={sbOpen} onToggle={() => setSbOpen((o) => !o)} />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <TerminalHeader status={status} onMenu={() => setSbOpen((o) => !o)} sidebarOpen={sbOpen} />
-          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
-            <TerminalRatioBar symbol={symbol} />
-            <div className="flex h-[56vh] min-h-[340px] flex-col lg:h-auto lg:min-h-0 lg:flex-1">
-              <TerminalChart symbol={symbol} onSymbolChange={setSymbol} />
-            </div>
-            <TerminalActionPanel asset={asset} price={price} trades={trades} message={message} onTrade={onTrade} />
-          </main>
-        </div>
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto lg:flex-row lg:overflow-hidden lg:gap-2.5">
+          <TerminalRatioBar symbol={symbol} />
+          <div className="flex min-h-[52vh] flex-col lg:min-h-0 lg:flex-1">
+            <TerminalChart symbol={symbol} onSymbolChange={setSymbol} />
+          </div>
+          <TerminalActionPanel asset={asset} price={price} trades={trades} message={message} onTrade={onTrade} />
+        </main>
       </div>
       <TerminalNavbar />
     </div>
@@ -112,7 +110,7 @@ function TerminalInner() {
 
 export default function TradePage() {
   return (
-    <Suspense fallback={<div className="grid h-screen place-items-center bg-qt-bg text-qt-mut">Loading terminal…</div>}>
+    <Suspense fallback={<div className="grid h-screen place-items-center bg-neo-bg text-neo-mut">Loading terminal…</div>}>
       <TerminalInner />
     </Suspense>
   );

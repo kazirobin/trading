@@ -6,6 +6,14 @@ import { ASSETS, STEP, assetOf, fetchKlines, type Interval } from '@/lib/binance
 
 const WSH = ['wss://stream.binance.com:9443', 'wss://data-stream.binance.vision:9443'];
 
+const TF: { label: string; value: Interval }[] = [
+  { label: '1m', value: '1m' },
+  { label: '5m', value: '5m' },
+  { label: '15m', value: '15m' },
+  { label: '1H', value: '1h' },
+  { label: '1D', value: '1d' },
+];
+
 function pad(n: number) {
   return String(n).padStart(2, '0');
 }
@@ -19,10 +27,10 @@ function clockUTC(d = new Date()) {
 function Flags({ base, quote, size = 'h-5 w-5' }: { base: string; quote: string; size?: string }) {
   return (
     <span className={`flex ${size === 'h-5 w-5' ? '-space-x-1.5' : '-space-x-2'}`}>
-      <span className={`grid ${size} place-items-center rounded-full bg-gradient-to-br from-[#4f9dff] to-[#2b6ef0] text-[9px] font-bold text-white ring-2 ring-qt-bg`}>
+      <span className={`grid ${size} place-items-center rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 text-[9px] font-bold text-white ring-2 ring-neo-bg`}>
         {base[0]}
       </span>
-      <span className={`grid ${size} place-items-center rounded-full bg-gradient-to-br from-[#ffb347] to-[#e88400] text-[9px] font-bold text-white ring-2 ring-qt-bg`}>
+      <span className={`grid ${size} place-items-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-[9px] font-bold text-white ring-2 ring-neo-bg`}>
         {quote[0]}
       </span>
     </span>
@@ -42,7 +50,7 @@ export function TerminalChart({
   const lastRef = useRef<CandlestickData | null>(null);
   const lineRef = useRef<IPriceLine | null>(null);
 
-  const [interval] = useState<Interval>('1m');
+  const [interval, setInterval] = useState<Interval>('1m');
   const [price, setPrice] = useState<number | null>(null);
   const [status, setStatus] = useState<'loading' | 'live' | 'offline'>('loading');
   const [now, setNow] = useState(() => new Date());
@@ -64,22 +72,23 @@ export function TerminalChart({
       const { createChart, ColorType } = await import('lightweight-charts');
       if (disposed || !wrapRef.current) return;
       const chart = createChart(wrapRef.current, {
-        layout: { background: { type: ColorType.Solid, color: '#232838' }, textColor: '#8B92A6', fontSize: 11 },
-        grid: { vertLines: { color: '#2A3042' }, horzLines: { color: '#2A3042' } },
-        rightPriceScale: { borderColor: '#2E3547', scaleMargins: { top: 0.12, bottom: 0.1 } },
-        timeScale: { timeVisible: true, secondsVisible: false, borderColor: '#2E3547', rightOffset: 8, barSpacing: 9 },
+        layout: { background: { type: ColorType.Solid, color: '#0d1117' }, textColor: '#8395a8', fontSize: 11 },
+        grid: { vertLines: { color: '#161b22' }, horzLines: { color: '#161b22' } },
+        rightPriceScale: { borderColor: '#26324a', scaleMargins: { top: 0.12, bottom: 0.1 } },
+        timeScale: { timeVisible: true, secondsVisible: false, borderColor: '#26324a', rightOffset: 8, barSpacing: 9 },
         crosshair: {
-          vertLine: { color: '#2B99FF', labelBackgroundColor: '#2B99FF' },
-          horzLine: { color: '#2B99FF', labelBackgroundColor: '#2B99FF' },
+          vertLine: { color: '#2b99ff', labelBackgroundColor: '#2b99ff' },
+          horzLine: { color: '#2b99ff', labelBackgroundColor: '#2b99ff' },
         },
         autoSize: true,
       });
       const series = chart.addCandlestickSeries({
-        upColor: '#0FAF59',
-        downColor: '#F6465D',
-        borderVisible: false,
-        wickUpColor: '#0FAF59',
-        wickDownColor: '#F6465D',
+        upColor: '#10b981',
+        downColor: '#ff5470',
+        borderUpColor: '#10b981',
+        borderDownColor: '#ff5470',
+        wickUpColor: '#10b981',
+        wickDownColor: '#ff5470',
         priceLineVisible: false,
         lastValueVisible: false,
       });
@@ -139,7 +148,7 @@ export function TerminalChart({
       else if (seriesRef.current)
         lineRef.current = seriesRef.current.createPriceLine({
           price: p,
-          color: '#2B99FF',
+          color: '#2b99ff',
           lineWidth: 1,
           lineStyle: 2,
           axisLabelVisible: true,
@@ -239,16 +248,16 @@ export function TerminalChart({
   const quote = a.label.split('/')[1] ?? 'T';
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden border-t border-qt-line bg-qt-panel lg:border-r lg:border-t-0">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-neo-bg">
       <div ref={wrapRef} className="absolute inset-0 z-0" />
 
       {/* DEMO watermark */}
-      <span className="pointer-events-none absolute left-1/2 top-1/2 z-[5] -translate-x-1/2 -translate-y-1/2 rotate-[-14deg] text-[7rem] font-black uppercase tracking-widest text-white/[0.035] select-none lg:text-[10rem]">
+      <span className="pointer-events-none absolute left-1/2 top-1/2 z-[5] -translate-x-1/2 -translate-y-1/2 rotate-[-14deg] text-[7rem] font-black uppercase tracking-widest text-white/[0.03] select-none lg:text-[10rem]">
         Demo
       </span>
 
-      {/* asset selector cards */}
-      <div className="pointer-events-none absolute left-2 top-2 z-20 flex flex-wrap items-start gap-1">
+      {/* frosted asset switcher */}
+      <div className="pointer-events-none absolute left-2 top-2 z-20 flex flex-wrap items-start gap-1.5">
         {tabs.map((sym) => {
           const ta = assetOf(sym);
           const on = sym === symbol;
@@ -256,20 +265,22 @@ export function TerminalChart({
           return (
             <div
               key={sym}
-              className={`group pointer-events-auto flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] ${
-                on ? 'border border-qt-line bg-qt-panel2 text-qt-text' : 'bg-qt-bg/60 text-qt-mut hover:bg-qt-panel2 hover:text-qt-text'
+              className={`group pointer-events-auto flex items-center gap-2 rounded-xl px-2 py-1.5 text-[12px] backdrop-blur-xl transition-all duration-200 ${
+                on
+                  ? 'glass-strong border-blue-400/30 text-neo-text shadow-[0_0_20px_-6px_rgba(43,153,255,0.6)]'
+                  : 'border-transparent bg-white/[0.03] text-neo-mut hover:bg-white/[0.07] hover:text-neo-text'
               }`}
             >
               <button onClick={() => onSymbolChange(sym)} className="flex items-center gap-1.5">
                 <Flags base={tb ?? 'B'} quote={tq ?? 'T'} />
                 <span className="font-semibold">
                   {ta.label}
-                  {on && <span className="ml-1 text-[9px] font-semibold uppercase text-qt-mut">(OTC)</span>}
+                  {on && <span className="ml-1 text-[9px] font-semibold uppercase text-neo-mut">(OTC)</span>}
                 </span>
-                <span className="font-bold text-qt-gold">{ta.payout}%</span>
+                <span className="font-bold text-amber-300">{ta.payout}%</span>
               </button>
               {on && tabs.length > 1 && (
-                <button onClick={() => closeTab(sym)} className="text-qt-mut hover:text-qt-down" aria-label="Close">
+                <button onClick={() => closeTab(sym)} className="text-neo-mut hover:text-rose-400" aria-label="Close">
                   <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
                 </button>
               )}
@@ -280,24 +291,24 @@ export function TerminalChart({
         <div className="relative">
           <button
             onClick={() => setAddOpen((v) => !v)}
-            className="pointer-events-auto grid h-[30px] min-w-[26px] place-items-center rounded-md bg-qt-bg/60 px-1 text-qt-mut hover:bg-qt-panel2 hover:text-qt-text"
+            className="pointer-events-auto grid h-[30px] min-w-[26px] place-items-center rounded-xl border border-white/5 bg-white/[0.03] px-1 text-neo-mut backdrop-blur-xl transition-all hover:border-sky-400/40 hover:text-white"
             aria-label="Add asset"
           >
             +
           </button>
           {addOpen && (
-            <div className="pointer-events-auto absolute left-0 top-[calc(100%+6px)] z-30 w-64 rounded-lg border border-qt-line bg-qt-panel p-1.5 shadow-2xl">
+            <div className="neo-pop pointer-events-auto absolute left-0 top-[calc(100%+6px)] z-30 w-64 overflow-hidden rounded-xl glass-strong p-1.5 shadow-2xl">
               {ASSETS.filter((x) => !tabs.includes(x.symbol)).map((x) => (
                 <button
                   key={x.symbol}
                   onClick={() => addTab(x.symbol)}
-                  className="flex w-full items-center justify-between gap-2 rounded px-2 py-2 text-sm hover:bg-qt-hover"
+                  className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-white/[0.06]"
                 >
                   <span className="flex items-center gap-2">
-                    <span className="grid h-5 w-5 place-items-center rounded-full bg-qt-panel2 text-[9px] font-bold text-qt-text">{x.coin}</span>
-                    <span className="font-semibold text-qt-text">{x.label}</span>
+                    <span className="grid h-5 w-5 place-items-center rounded-full bg-gradient-to-br from-sky-400 to-blue-600 text-[9px] font-bold text-white">{x.coin}</span>
+                    <span className="font-semibold text-neo-text">{x.label}</span>
                   </span>
-                  <span className="font-bold text-qt-gold">{x.payout}%</span>
+                  <span className="font-bold text-amber-300">{x.payout}%</span>
                 </button>
               ))}
             </div>
@@ -306,11 +317,11 @@ export function TerminalChart({
       </div>
 
       {/* UTC clock + pair info */}
-      <div className="pointer-events-none absolute left-2 top-[44px] z-20 flex flex-col items-start gap-1.5">
-        <span className="flex items-center gap-1.5 rounded-md bg-qt-bg/60 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-qt-text backdrop-blur">
-          {clockUTC(now)} <span className="text-qt-mut">UTC</span>
+      <div className="pointer-events-none absolute left-2 top-[46px] z-20 flex flex-col items-start gap-1.5">
+        <span className="flex items-center gap-1.5 rounded-lg border border-white/5 bg-white/[0.04] px-2 py-0.5 text-[11px] font-semibold tabular-nums text-neo-text backdrop-blur-xl">
+          {clockUTC(now)} <span className="text-neo-mut">UTC</span>
         </span>
-        <button className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-qt-accent px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-white hover:brightness-110">
+        <button className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-white shadow-[0_6px_16px_-6px_rgba(43,153,255,0.8)] transition-all hover:brightness-110">
           <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2}>
             <circle cx="12" cy="12" r="9" />
             <path d="M12 11v5M12 8h.01" strokeLinecap="round" />
@@ -321,52 +332,67 @@ export function TerminalChart({
 
       {/* active price pill */}
       <div className="pointer-events-none absolute right-3 top-2 z-20">
-        <span className="inline-flex items-center rounded-full bg-qt-accent px-3 py-0.5 text-[13px] font-bold tabular-nums text-white shadow-lg">
+        <span className="inline-flex items-center rounded-full border border-sky-400/40 bg-neo-bg/70 px-3 py-0.5 text-[13px] font-bold tabular-nums text-sky-300 shadow-[0_0_20px_-6px_rgba(43,153,255,0.7)] backdrop-blur-xl">
           {price != null ? fmtPrice(price) : '—'}
         </span>
       </div>
 
       {/* trade interval markers */}
       <div className="pointer-events-none absolute inset-y-4 z-[5]">
-        <div className="absolute inset-y-6 left-[63%] border-l border-dashed border-white/25">
-          <span className="absolute left-0 top-1/4 -translate-x-1/2 whitespace-nowrap rounded bg-qt-bg/70 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-white/60">
+        <div className="absolute inset-y-6 left-[63%] border-l border-dashed border-cyan-300/25">
+          <span className="absolute left-0 top-1/4 -translate-x-1/2 whitespace-nowrap rounded border border-white/5 bg-neo-bg/70 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-white/50">
             Beginning of trade
           </span>
         </div>
-        <div className="absolute inset-y-6 left-[84%] border-l border-dashed border-white/25">
-          <span className="absolute left-0 top-1/4 -translate-x-1/2 whitespace-nowrap rounded bg-qt-bg/70 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-qt-accent">
+        <div className="absolute inset-y-6 left-[84%] border-l border-dashed border-sky-400/40">
+          <span className="absolute left-0 top-1/4 -translate-x-1/2 whitespace-nowrap rounded border border-sky-400/30 bg-neo-bg/70 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-sky-400">
             End of trade
           </span>
         </div>
       </div>
 
-      {/* left floating toolbar */}
-      <div className="absolute left-3 top-1/2 z-20 flex -translate-y-1/2 flex-col items-center gap-1 rounded-lg border border-qt-line bg-qt-bg/80 p-1 backdrop-blur">
-        <button className="grid h-7 w-7 place-items-center rounded text-qt-mut hover:bg-qt-hover hover:text-qt-text" aria-label="Draw">
+      {/* left floating drawing toolbar */}
+      <div className="absolute left-3 top-1/2 z-20 flex -translate-y-1/2 flex-col items-center gap-1 rounded-2xl border border-white/5 bg-neo-bg/60 p-1 backdrop-blur-xl">
+        <button className="grid h-7 w-7 place-items-center rounded-xl text-neo-mut transition-colors hover:bg-white/[0.06] hover:text-sky-300" aria-label="Draw">
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
         </button>
-        <button className="grid h-7 w-7 place-items-center rounded bg-qt-accent text-[10px] font-bold text-white" aria-label="1 minute">
-          {interval}
-        </button>
-        <button className="grid h-7 w-7 place-items-center rounded text-qt-text hover:bg-qt-hover" aria-label="Chart type">
+        <button className="grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-b from-sky-400 to-blue-600 text-[10px] font-bold text-white shadow-[0_0_14px_-4px_rgba(43,153,255,0.8)]" aria-label="Chart type">
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><rect x="4" y="10" width="3" height="8" rx="0.5" /><rect x="10.5" y="6" width="3" height="10" rx="0.5" /><rect x="17" y="9" width="3" height="6" rx="0.5" /></svg>
         </button>
-        <button className="grid h-7 w-7 place-items-center rounded text-qt-mut hover:bg-qt-hover hover:text-qt-text" aria-label="Crosshair">
+        <button className="grid h-7 w-7 place-items-center rounded-xl text-neo-mut transition-colors hover:bg-white/[0.06] hover:text-sky-300" aria-label="Crosshair">
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M12 4v16M4 12h16M12 12h.01" /></svg>
         </button>
       </div>
 
+      {/* timeframe toolbar (bottom left) */}
+      <div className="absolute bottom-3 left-3 z-20 flex items-center overflow-hidden rounded-xl border border-white/5 bg-neo-bg/70 backdrop-blur-xl">
+        {TF.map((tf) => (
+          <button
+            key={tf.value}
+            onClick={() => setInterval(tf.value)}
+            className={`px-2.5 py-1.5 text-[10px] font-bold transition-all ${
+              interval === tf.value
+                ? 'bg-gradient-to-b from-sky-400 to-blue-600 text-white'
+                : 'text-neo-mut hover:bg-white/[0.06] hover:text-white'
+            }`}
+            aria-label={`${tf.label} timeframe`}
+          >
+            {tf.label}
+          </button>
+        ))}
+      </div>
+
       {/* zoom (bottom center) */}
-      <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center overflow-hidden rounded-lg border border-qt-line bg-qt-bg/80 backdrop-blur">
-        <button onClick={() => zoom('in')} className="grid h-8 w-9 place-items-center rounded-l-lg text-qt-mut hover:bg-qt-hover hover:text-qt-text" aria-label="Zoom in">+</button>
-        <span className="h-4 w-px bg-qt-line" />
-        <button onClick={() => zoom('out')} className="grid h-8 w-9 place-items-center rounded-r-lg text-qt-mut hover:bg-qt-hover hover:text-qt-text" aria-label="Zoom out">−</button>
+      <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center overflow-hidden rounded-xl border border-white/5 bg-neo-bg/70 backdrop-blur-xl">
+        <button onClick={() => zoom('in')} className="grid h-8 w-9 place-items-center text-neo-mut transition-colors hover:bg-white/[0.06] hover:text-white" aria-label="Zoom in">+</button>
+        <span className="h-4 w-px bg-white/10" />
+        <button onClick={() => zoom('out')} className="grid h-8 w-9 place-items-center text-neo-mut transition-colors hover:bg-white/[0.06] hover:text-white" aria-label="Zoom out">−</button>
       </div>
 
       {/* live indicator */}
       <span className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest">
-        <span className={`h-2 w-2 rounded-full ${status === 'live' ? 'bg-qt-up' : status === 'offline' ? 'bg-qt-down' : 'bg-qt-mut'}`} />
-        <span className={status === 'live' ? 'text-qt-up' : status === 'offline' ? 'text-qt-down' : 'text-qt-mut'}>
+        <span className={`h-2 w-2 rounded-full ${status === 'live' ? 'bg-emerald-400 shadow-[0_0_10px_2px_rgba(16,185,129,0.7)]' : status === 'offline' ? 'bg-rose-400 shadow-[0_0_10px_2px_rgba(255,84,112,0.7)]' : 'bg-neo-mut'}`} />
+        <span className={status === 'live' ? 'text-emerald-300' : status === 'offline' ? 'text-rose-400' : 'text-neo-mut'}>
           {status === 'live' ? 'Live' : status === 'offline' ? 'Offline' : 'Loading'}
         </span>
       </span>
