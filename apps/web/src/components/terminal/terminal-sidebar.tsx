@@ -38,36 +38,53 @@ const nav: NavItem[] = [
 export function TerminalSidebar({ open = true, onToggle }: { open?: boolean; onToggle?: () => void }) {
   return (
     <aside
-      className={`hidden shrink-0 flex-col items-center overflow-hidden border-r border-qt-line bg-qt-sidebar transition-[width] duration-300 ease-in-out lg:flex ${
+      className={`group/side hidden shrink-0 flex-col items-center overflow-hidden border-r border-qt-line bg-gradient-to-b from-qt-sidebar via-qt-sidebar to-[#0e1119] transition-[width] duration-300 ease-in-out lg:flex ${
         open ? 'w-[74px]' : 'w-0 border-r-0'
       }`}
     >
       <button
         onClick={onToggle}
-        className="grid h-14 w-full shrink-0 place-items-center text-qt-mut hover:bg-qt-hover hover:text-qt-text"
+        title={open ? 'Hide sidebar' : 'Show sidebar'}
         aria-label={open ? 'Hide sidebar' : 'Show sidebar'}
+        className="grid h-14 w-full shrink-0 place-items-center text-qt-mut transition-colors hover:bg-qt-hover/60 hover:text-qt-text"
       >
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-          <path d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
+        <span className="grid h-8 w-8 place-items-center rounded-lg border border-transparent transition-all duration-200 group-hover/side:border-qt-line group-hover/side:bg-qt-panel">
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </span>
       </button>
 
-      <div className="w-full border-b border-qt-line" />
+      <div className="h-px w-10 bg-gradient-to-r from-transparent via-qt-line to-transparent" />
 
-      <div className="mt-4 flex w-full flex-col items-center gap-1">
+      <div className="mt-3 flex w-full flex-col items-center gap-1 pb-2">
         {nav.map(({ label, active, badge, d }) => (
           <Link
             key={label}
             href={label === 'TRADE' ? '/trade' : '/'}
+            title={label}
             aria-label={label}
-            className={`relative flex w-[62px] flex-col items-center gap-1 rounded-lg py-1.5 ${
-              active ? 'bg-qt-panel2 text-qt-text' : 'text-qt-mut hover:bg-qt-hover hover:text-qt-text'
+            className={`group relative flex w-[66px] flex-col items-center gap-1 rounded-xl px-1 py-2 transition-all duration-200 ${
+              active
+                ? 'bg-gradient-to-b from-qt-panel2 to-[#2a3042]/60 text-qt-text shadow-[0_8px_20px_-8px_rgba(43,153,255,0.55)] ring-1 ring-inset ring-qt-line/70'
+                : 'text-qt-mut hover:bg-qt-panel2/60 hover:text-qt-text hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]'
             }`}
           >
-            <I d={d} className="h-5 w-5" />
-            <span className="text-center text-[8px] font-extrabold uppercase leading-[1.25] tracking-[0.02em]">{label}</span>
+            {active && (
+              <>
+                <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-gradient-to-b from-qt-accent to-[#6dB8ff]" />
+                <span className="absolute -right-px -top-px h-2.5 w-2.5 rounded-bl-md border-l border-b border-qt-line/70 bg-gradient-to-br from-qt-accent/25 to-transparent" />
+              </>
+            )}
+            <I
+              d={d}
+              className={`h-5 w-5 transition-transform duration-200 group-hover:scale-110 ${active ? 'text-qt-accent drop-shadow-[0_2px_6px_rgba(43,153,255,0.4)]' : 'group-hover:text-qt-text'}`}
+            />
+            <span className={`text-center text-[8px] font-extrabold uppercase leading-[1.25] tracking-[0.02em] ${active ? 'text-qt-text' : 'text-qt-mut group-hover:text-qt-text'}`}>
+              {label}
+            </span>
             {typeof badge === 'number' && (
-              <span className="absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-qt-accent px-1 text-[10px] font-bold text-white">
+              <span className="absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-qt-accent px-1 text-[10px] font-bold text-white shadow-[0_2px_8px_-2px_rgba(43,153,255,0.9)] ring-2 ring-qt-sidebar">
                 {badge}
               </span>
             )}
