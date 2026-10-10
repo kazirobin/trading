@@ -94,7 +94,7 @@ function TerminalInner() {
     <div className="qt-shell flex h-dvh w-full flex-col overflow-hidden font-sans text-qt-text">
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <TerminalSidebar open={sbOpen} onToggle={() => setSbOpen((o) => !o)} />
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <TerminalHeader status={status} onMenu={() => setSbOpen((o) => !o)} sidebarOpen={sbOpen} />
           <main className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
             <TerminalRatioBar symbol={symbol} />

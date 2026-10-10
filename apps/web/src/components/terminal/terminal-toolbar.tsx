@@ -92,18 +92,25 @@ export function TerminalToolbar({
 
       <button
         onClick={() => bump('join', onJoinUsClick)}
-        className={`flex h-8 w-[64px] items-center justify-center gap-1 rounded-lg bg-[#2b5ae8] text-[8px] font-extrabold uppercase tracking-[0.08em] text-white transition hover:brightness-110 active:scale-[0.97] ${flash === 'join' ? 'brightness-125' : ''}`}
+        className={`flex h-10 w-[66px] flex-col items-center justify-center gap-1 rounded-[10px] bg-[#2b5ae8] shadow-[0_6px_16px_-4px_rgba(43,90,232,0.65)] transition hover:brightness-110 active:scale-[0.97] ${flash === 'join' ? 'brightness-125' : ''}`}
+        aria-label="Join us"
       >
-        <IC d="M4 5h16v11H8l-4 4z" className="h-3 w-3" />
-        Join us
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="#6EA8FF" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 6a2.5 2.5 0 0 1 2.5-2.5h8A2.5 2.5 0 0 1 17 6v4.5a2.5 2.5 0 0 1-2.5 2.5H11l-3.5 2.9V13H6.5A2.5 2.5 0 0 1 4 10.5V6z" />
+          <path d="M17 9.5h1.5A2.5 2.5 0 0 1 21 12v3.5a2.5 2.5 0 0 1-2.5 2.5H17v2.6l-3.5-2.6h-2" />
+        </svg>
+        <span className="text-[8px] font-extrabold uppercase tracking-[0.08em] text-white">Join us</span>
       </button>
 
       <button
         onClick={() => bump('help', onHelpClick)}
-        className="relative flex h-8 w-[64px] items-center justify-center gap-1 rounded-lg bg-qt-up text-[8px] font-extrabold uppercase tracking-[0.08em] text-white transition hover:brightness-110 active:scale-[0.97]"
+        className="flex h-10 w-[66px] flex-col items-center justify-center gap-1 rounded-[10px] bg-qt-up shadow-[0_6px_16px_-4px_rgba(15,175,89,0.65)] transition hover:brightness-110 active:scale-[0.97]"
+        aria-label="Help"
       >
-        <span className="absolute -top-0.5 right-1.5 h-1.5 w-1.5 rounded-full bg-white" />
-        Help
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
+          <circle cx="12" cy="12" r="4" fill="#fff" />
+        </svg>
+        <span className="text-[8px] font-bold tracking-[0.02em] text-white">Help</span>
       </button>
     </div>
   );
