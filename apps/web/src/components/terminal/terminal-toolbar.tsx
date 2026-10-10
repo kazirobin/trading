@@ -92,7 +92,7 @@ export function TerminalToolbar({
 
       <button
         onClick={() => bump('join', onJoinUsClick)}
-        className={`flex h-7 w-[62px] items-center justify-center gap-1 rounded-md bg-[#2b5ae8] text-[8px] font-extrabold uppercase tracking-[0.06em] text-white transition hover:brightness-110 active:scale-[0.97] ${flash === 'join' ? 'brightness-125' : ''}`}
+        className={`flex h-8 w-[64px] items-center justify-center gap-1 rounded-lg bg-[#2b5ae8] text-[8px] font-extrabold uppercase tracking-[0.08em] text-white transition hover:brightness-110 active:scale-[0.97] ${flash === 'join' ? 'brightness-125' : ''}`}
       >
         <IC d="M4 5h16v11H8l-4 4z" className="h-3 w-3" />
         Join us
@@ -100,9 +100,9 @@ export function TerminalToolbar({
 
       <button
         onClick={() => bump('help', onHelpClick)}
-        className="relative flex h-7 w-[62px] items-center justify-center gap-1 rounded-md bg-qt-up text-[8px] font-extrabold uppercase tracking-[0.06em] text-white transition hover:brightness-110 active:scale-[0.97]"
+        className="relative flex h-8 w-[64px] items-center justify-center gap-1 rounded-lg bg-qt-up text-[8px] font-extrabold uppercase tracking-[0.08em] text-white transition hover:brightness-110 active:scale-[0.97]"
       >
-        <span className="absolute -top-0.5 right-1 h-1.5 w-1.5 rounded-full bg-white" />
+        <span className="absolute -top-0.5 right-1.5 h-1.5 w-1.5 rounded-full bg-white" />
         Help
       </button>
     </div>

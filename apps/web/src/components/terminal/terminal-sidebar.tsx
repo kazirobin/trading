@@ -34,14 +34,24 @@ const nav = [
   { label: 'MORE', active: false, d: 'M5 12h.01M12 12h.01M19 12h.01' },
 ];
 
-export function TerminalSidebar() {
+export function TerminalSidebar({ open = true, onToggle }: { open?: boolean; onToggle?: () => void }) {
   return (
-    <aside className="hidden w-[74px] shrink-0 flex-col items-center border-r border-qt-line bg-qt-sidebar lg:flex">
-      <button className="grid h-11 w-full place-items-center text-qt-mut hover:bg-qt-hover hover:text-qt-text" aria-label="Menu">
+    <aside
+      className={`hidden shrink-0 flex-col items-center overflow-hidden border-r border-qt-line bg-qt-sidebar transition-[width] duration-300 ease-in-out lg:flex ${
+        open ? 'w-[74px]' : 'w-0 border-r-0'
+      }`}
+    >
+      <button
+        onClick={onToggle}
+        className="grid h-14 w-full shrink-0 place-items-center text-qt-mut hover:bg-qt-hover hover:text-qt-text"
+        aria-label={open ? 'Hide sidebar' : 'Show sidebar'}
+      >
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
           <path d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
+
+      <div className="w-full border-b border-qt-line" />
 
       <div className="mt-4 flex w-full flex-col items-center gap-1">
         {nav.map(({ label, active, badge, d }) => (

@@ -28,6 +28,7 @@ function TerminalInner() {
 
   const [trades, setTrades] = useState<TerminalTrade[]>([]);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [sbOpen, setSbOpen] = useState(true);
 
   const setSymbol = useCallback(
     (s: string) => {
@@ -59,7 +60,8 @@ function TerminalInner() {
     async (side: 'buy' | 'sell', amount: number, seconds: number) => {
       setMessage(null);
       if (!token) {
-        setMessage({ ok: false, text: 'Log in to place live trades.' });
+        setMessage({ ok: false, text: 'Signing in required — routing to login…' });
+        router.push(`/login?next=/trade${symbol !== 'BTCUSDT' ? `?symbol=${symbol}` : ''}`);
         return;
       }
       if (!price) {
@@ -85,19 +87,23 @@ function TerminalInner() {
         setMessage({ ok: false, text: e instanceof Error ? e.message : 'Order failed' });
       }
     },
-    [token, price, symbol, asset.label],
+    [token, price, symbol, asset.label, router],
   );
 
   return (
     <div className="qt-shell flex h-dvh w-full flex-col overflow-hidden font-sans text-qt-text">
-      <TerminalHeader status={status} />
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <TerminalSidebar />
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-          <TerminalRatioBar symbol={symbol} />
-          <TerminalChart symbol={symbol} onSymbolChange={setSymbol} />
-          <TerminalActionPanel asset={asset} price={price} trades={trades} message={message} onTrade={onTrade} />
-        </main>
+        <TerminalSidebar open={sbOpen} onToggle={() => setSbOpen((o) => !o)} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TerminalHeader status={status} onMenu={() => setSbOpen((o) => !o)} sidebarOpen={sbOpen} />
+          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
+            <TerminalRatioBar symbol={symbol} />
+            <div className="flex h-[56vh] min-h-[340px] flex-col lg:h-auto lg:min-h-0 lg:flex-1">
+              <TerminalChart symbol={symbol} onSymbolChange={setSymbol} />
+            </div>
+            <TerminalActionPanel asset={asset} price={price} trades={trades} message={message} onTrade={onTrade} />
+          </main>
+        </div>
       </div>
       <TerminalNavbar />
     </div>

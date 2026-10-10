@@ -1,8 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { api } from '@/lib/api';
+import { fmt } from '@/lib/format';
 import { useAuth } from '@/lib/store';
+import type { WalletBalance } from '@/lib/types';
 
 const Icon = ({ d, className = 'h-5 w-5' }: { d: string; className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
@@ -10,13 +13,61 @@ const Icon = ({ d, className = 'h-5 w-5' }: { d: string; className?: string }) =
   </svg>
 );
 
-export function TerminalHeader({ status }: { status: 'connecting' | 'live' | 'offline' }) {
-  const { user } = useAuth();
+export function TerminalHeader({
+  status,
+  onMenu,
+  sidebarOpen,
+}: {
+  status: 'connecting' | 'live' | 'offline';
+  onMenu?: () => void;
+  sidebarOpen?: boolean;
+}) {
+  const { user, logout } = useAuth();
   const [bell, setBell] = useState(false);
   const [bonus, setBonus] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [balance, setBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    const load = () =>
+      api
+        .get<WalletBalance[]>('/api/wallet')
+        .then((ws) => {
+          if (!alive) return;
+          const usdt = ws.find((w) => w.currency === 'USDT');
+          setBalance(usdt ? usdt.available + usdt.locked : ws.reduce((s, w) => s + (w.available + w.locked), 0));
+        })
+        .catch(() => undefined);
+    load();
+    const id = window.setInterval(load, 15000);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, [user]);
 
   return (
     <header className="relative z-30 flex h-14 shrink-0 items-center gap-3 border-b border-qt-line bg-qt-bg px-3 lg:px-4">
+      {onMenu && !sidebarOpen && (
+        <button
+          onClick={onMenu}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-qt-line bg-qt-panel text-qt-mut hover:border-qt-accent hover:text-qt-text lg:hidden xl:grid"
+          aria-label="Show sidebar"
+        >
+          <Icon d="M4 6h16M4 12h16M4 18h16" className="h-4 w-4" />
+        </button>
+      )}
+      <Link href="/" className="flex shrink-0 items-center gap-2.5">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-qt-accent to-[#0FAF59]">
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="#fff" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 17l5-6 4 4 8-9" />
+            <path d="M15 6h5v5" />
+          </svg>
+        </span>
+        <span className="hidden text-[15px] font-bold tracking-wide text-qt-text xl:block">Web Trading Platform</span>
+      </Link>
       <div className="mx-auto hidden min-w-0 flex-1 items-center justify-center xl:flex">
         {bonus && (
           <div className="flex items-center gap-2.5 rounded-lg bg-gradient-to-r from-[#0FAF59] to-[#12c963] px-3 py-1.5 shadow-[0_6px_20px_-8px_rgba(15,175,89,0.9)]">
@@ -35,20 +86,79 @@ export function TerminalHeader({ status }: { status: 'connecting' | 'live' | 'of
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        <Link href="/settings" className="flex items-center gap-2 rounded-lg border border-qt-line bg-qt-panel px-2.5 py-1.5 hover:border-qt-accent">
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-qt-accent to-[#0FAF59] text-xs font-bold text-white">
-            {user?.name?.[0]?.toUpperCase() ?? 'T'}
-          </span>
-          <span className="hidden leading-tight sm:block">
-            <span className="block text-[10px] font-semibold uppercase tracking-wide text-qt-gold">Demo account</span>
-            <span className="block text-[14px] font-bold tabular-nums text-qt-text">$10,000.00</span>
-          </span>
-          <Icon d="M6 9l6 6 6-6" className="h-4 w-4 text-qt-mut" />
-        </Link>
+        <div className="relative">
+          <button
+            onClick={() => {
+              setMenuOpen((v) => !v);
+              setBell(false);
+            }}
+            className="flex items-center gap-2 rounded-lg border border-qt-line bg-qt-panel px-2.5 py-1.5 hover:border-qt-accent"
+            aria-label="Account menu"
+          >
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-qt-accent to-[#0FAF59] text-xs font-bold text-white">
+              {user?.name?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? 'T'}
+            </span>
+            <span className="hidden leading-tight sm:block">
+              <span className="block text-[10px] font-semibold uppercase tracking-wide text-qt-gold">
+                {user ? (user.name || 'Account') : 'Demo account'}
+              </span>
+              <span className="block text-[14px] font-bold tabular-nums text-qt-text">
+                ${fmt(balance ?? (user ? 0 : 10000), 2)} {user && balance === null && <span className="text-[10px] font-normal text-qt-mut">…</span>}
+              </span>
+            </span>
+            <Icon d="M6 9l6 6 6-6" className="h-4 w-4 text-qt-mut" />
+          </button>
+
+          {menuOpen && (
+            <>
+              <button
+                className="fixed inset-0 z-40 cursor-default"
+                aria-label="Close menu"
+                onClick={() => setMenuOpen(false)}
+                tabIndex={-1}
+              />
+              <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-60 rounded-lg border border-qt-line bg-qt-panel p-1.5 shadow-2xl">
+                {user ? (
+                  <>
+                    <div className="rounded-md bg-qt-bg px-3 py-2.5">
+                      <p className="truncate text-sm font-semibold text-qt-text">{user.name}</p>
+                      <p className="truncate text-xs text-qt-mut">{user.email}</p>
+                    </div>
+                    <Link href="/wallet" onClick={() => setMenuOpen(false)} className="menu-item">Deposit / Withdraw</Link>
+                    <Link href="/settings" onClick={() => setMenuOpen(false)} className="menu-item">Account settings</Link>
+                    {user.role === 'admin' && <Link href="/admin" onClick={() => setMenuOpen(false)} className="menu-item">Admin panel</Link>}
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        logout();
+                        window.location.href = '/login';
+                      }}
+                      className="menu-item bg-down/10 text-qt-down"
+                    >
+                      Log out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="rounded-md bg-qt-bg px-3 py-2.5">
+                      <p className="text-sm font-semibold text-qt-text">Demo account</p>
+                      <p className="text-xs text-qt-mut">Log in to trade with real funds</p>
+                    </div>
+                    <Link href="/login" onClick={() => setMenuOpen(false)} className="menu-item">Log in</Link>
+                    <Link href="/register" onClick={() => setMenuOpen(false)} className="menu-item">Create account</Link>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
 
         <div className="relative">
           <button
-            onClick={() => setBell((v) => !v)}
+            onClick={() => {
+              setBell((v) => !v);
+              setMenuOpen(false);
+            }}
             className="relative grid h-9 w-9 place-items-center rounded-lg border border-qt-line bg-qt-panel text-qt-mut hover:border-qt-accent hover:text-qt-text"
             aria-label="Notifications"
           >
