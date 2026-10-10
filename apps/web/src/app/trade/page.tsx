@@ -1,11 +1,13 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { TerminalHeader } from '@/components/terminal/terminal-header';
 import { TerminalSidebar } from '@/components/terminal/terminal-sidebar';
 import { TerminalChart } from '@/components/terminal/terminal-chart';
 import { TerminalActionPanel, type TerminalTrade } from '@/components/terminal/terminal-action-panel';
+import { TerminalNavbar } from '@/components/terminal/terminal-navbar';
+import { TerminalRatioBar } from '@/components/terminal/terminal-ratio-bar';
 import { api } from '@/lib/api';
 import { assetOf, useBinanceTickers } from '@/lib/binance';
 import { useAuth } from '@/lib/store';
@@ -15,6 +17,7 @@ function pad(n: number) {
 }
 
 function TerminalInner() {
+  const router = useRouter();
   const params = useSearchParams();
   const { token } = useAuth();
   const { tickers, status } = useBinanceTickers();
@@ -25,6 +28,14 @@ function TerminalInner() {
 
   const [trades, setTrades] = useState<TerminalTrade[]>([]);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const setSymbol = useCallback(
+    (s: string) => {
+      const current = params.get('symbol') || 'BTCUSDT';
+      if (s !== current) router.replace(`/trade?symbol=${s}`, { scroll: false });
+    },
+    [params, router],
+  );
 
   useEffect(() => {
     if (!token) return;
@@ -60,7 +71,13 @@ function TerminalInner() {
         await api.post('/api/orders', { symbol, side, type: 'market', amount: qty });
         const d = new Date();
         setTrades((prev) => [
-          { id: `${Date.now()}`, label: asset.label, side, amount, time: `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}` },
+          {
+            id: `${Date.now()}`,
+            label: asset.label,
+            side,
+            amount,
+            time: `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`,
+          },
           ...prev,
         ]);
         setMessage({ ok: true, text: `${side === 'buy' ? 'Buy' : 'Sell'} placed · $${amount} · ${seconds}s` });
@@ -72,19 +89,17 @@ function TerminalInner() {
   );
 
   return (
-    <div className="qt-shell flex h-screen w-full flex-col overflow-hidden font-sans text-qt-text">
+    <div className="qt-shell flex h-dvh w-full flex-col overflow-hidden font-sans text-qt-text">
       <TerminalHeader status={status} />
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        <TerminalSidebar active="trade" />
-        <main className="qt-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 lg:flex-row lg:overflow-hidden">
-          <div className="flex h-[52vh] min-h-[320px] flex-col lg:h-auto lg:min-h-0 lg:flex-1">
-            <TerminalChart symbol={symbol} />
-          </div>
-          <div className="flex w-full flex-col lg:w-[340px] lg:shrink-0">
-            <TerminalActionPanel asset={asset} price={price} trades={trades} message={message} onTrade={onTrade} />
-          </div>
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <TerminalSidebar />
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
+          <TerminalRatioBar symbol={symbol} />
+          <TerminalChart symbol={symbol} onSymbolChange={setSymbol} />
+          <TerminalActionPanel asset={asset} price={price} trades={trades} message={message} onTrade={onTrade} />
         </main>
       </div>
+      <TerminalNavbar />
     </div>
   );
 }
