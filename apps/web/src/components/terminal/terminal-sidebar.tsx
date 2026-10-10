@@ -9,7 +9,9 @@ const I = ({ d, className = 'h-5 w-5' }: { d: string; className?: string }) => (
   </svg>
 );
 
-const nav = [
+type NavItem = { label: string; active: boolean; badge?: number; d: string };
+
+const nav: NavItem[] = [
   {
     label: 'TRADE',
     active: true,
@@ -26,10 +28,9 @@ const nav = [
     d: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4 20c1.5-3.7 4.4-5.5 8-5.5s6.5 1.8 8 5.5',
   },
   {
-    label: 'TOURNAMENTS',
+    label: 'AGENT ACCOUNT',
     active: false,
-    badge: 4,
-    d: 'M8 21h8M12 17v4M6 3h12v3a6 6 0 0 1-12 0V3zM6 5H3a4 4 0 0 0 3.2 3.9M18 5h3a4 4 0 0 1-3.2 3.9',
+    d: 'M5 10h14l1 10H4L5 10zM9 10V8a3 3 0 0 1 6 0v2M12 14v3M9.5 14h.01M14.5 14h.01',
   },
   { label: 'MORE', active: false, d: 'M5 12h.01M12 12h.01M19 12h.01' },
 ];
@@ -64,7 +65,7 @@ export function TerminalSidebar({ open = true, onToggle }: { open?: boolean; onT
             }`}
           >
             <I d={d} className="h-5 w-5" />
-            <span className="text-[8px] font-extrabold uppercase tracking-[0.04em]">{label}</span>
+            <span className="text-center text-[8px] font-extrabold uppercase leading-[1.25] tracking-[0.02em]">{label}</span>
             {typeof badge === 'number' && (
               <span className="absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-qt-accent px-1 text-[10px] font-bold text-white">
                 {badge}

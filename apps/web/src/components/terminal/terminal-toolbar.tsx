@@ -2,12 +2,6 @@
 
 import { useEffect, useState } from 'react';
 
-const IC = ({ d, className = 'h-4 w-4' }: { d: string; className?: string }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-    <path d={d} />
-  </svg>
-);
-
 export function TerminalToolbar({
   onOpenSettings,
   onJoinUsClick,
@@ -51,42 +45,73 @@ export function TerminalToolbar({
 
   return (
     <div className="mt-auto flex w-full flex-col items-center gap-2 pb-3 pt-3">
-      <div className="flex w-[56px] items-center justify-between">
+      <div className="flex w-[62px] items-center justify-between">
         <button
           onClick={toggleFullscreen}
           title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
           aria-label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-          className={`grid h-6 w-6 place-items-center rounded text-qt-mut transition-colors hover:bg-qt-hover ${flash === 'fullscreen' ? 'bg-qt-hover text-white' : ' hover:text-white'}`}
+          className={`grid h-7 w-7 place-items-center rounded-md border border-qt-line/60 bg-qt-panel2/50 text-qt-mut transition-colors hover:border-qt-accent hover:text-qt-text ${flash === 'fullscreen' ? 'border-qt-accent bg-qt-accent/15 text-qt-accent' : 'hover:bg-qt-hover'}`}
         >
-          <IC d={fullscreen ? 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5' : 'M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4'} />
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+            {fullscreen ? (
+              <>
+                <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+                <path d="M9 9h0M15 15h0M9 15h0M15 9h0" strokeWidth={2.2} />
+              </>
+            ) : (
+              <>
+                <path d="M3 8V3h5M21 8V3h-5M21 16v5h-5M3 16v5h5" />
+                <path d="M3 8h5M8 8V3M21 8h-5M16 8V3M21 16h-5M16 16v5M3 16h5M8 16v5" strokeWidth={1.2} opacity={0.7} />
+              </>
+            )}
+          </svg>
         </button>
         <button
           onClick={goBack}
           title="Back"
           aria-label="Back"
-          className="grid h-6 w-6 place-items-center rounded text-qt-mut transition-colors hover:bg-qt-hover hover:text-white"
+          className="grid h-7 w-7 place-items-center rounded-md border border-qt-line/60 bg-qt-panel2/50 text-qt-mut transition-colors hover:border-qt-accent hover:bg-qt-hover hover:text-qt-text"
         >
-          <IC d="M20 12H4M11 5l-7 7 7 7" />
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 1 0 3-6.7" />
+            <path d="M3 3v5h5" />
+          </svg>
         </button>
       </div>
 
-      <div className="flex w-[56px] items-center justify-between">
+      <div className="flex w-[62px] items-center justify-between">
         <button
           onClick={() => bump('settings', onOpenSettings)}
           title="Settings"
           aria-label="Settings"
-          className={`grid h-6 w-6 place-items-center rounded text-qt-mut transition-colors hover:bg-qt-hover ${flash === 'settings' ? 'bg-qt-hover text-white' : ' hover:text-white'}`}
+          className={`grid h-7 w-7 place-items-center rounded-md border border-qt-line/60 bg-qt-panel2/50 text-qt-mut transition-colors hover:border-qt-accent hover:text-qt-text ${flash === 'settings' ? 'border-qt-accent bg-qt-accent/15 text-qt-accent' : 'hover:bg-qt-hover'}`}
         >
-          <IC d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.5-2.3 1a7 7 0 0 0-2-1.2L14.5 2h-5l-.1 2.6a7 7 0 0 0-2 1.2l-2.3-1-2 3.5 2 1.5A7 7 0 0 0 5 12" />
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round">
+            <path d="M4 6h10M18 6h2M4 12h3M11 12h9M4 18h8M16 18h4" />
+            <circle cx="15" cy="6" r="1.9" />
+            <circle cx="8" cy="12" r="1.9" />
+            <circle cx="13" cy="18" r="1.9" />
+          </svg>
         </button>
         <button
           onClick={() => setMuted((m) => !m)}
           title={muted ? 'Unmute' : 'Mute'}
           aria-label={muted ? 'Unmute' : 'Mute'}
           aria-pressed={muted}
-          className="grid h-6 w-6 place-items-center rounded text-qt-mut transition-colors hover:bg-qt-hover hover:text-white"
+          className={`grid h-7 w-7 place-items-center rounded-md border border-qt-line/60 bg-qt-panel2/50 text-qt-mut transition-colors hover:border-qt-accent hover:bg-qt-hover hover:text-qt-text ${muted ? 'text-qt-down' : ''}`}
         >
-          <IC d={muted ? 'M11 5 6 9H3v6h3l5 4zM16 9l5 6M21 9l-5 6' : 'M11 5 6 9H3v6h3l5 4zM16 9a4 4 0 0 1 0 6'} />
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor" fillOpacity={0.25} />
+            {muted ? (
+              <>
+                <path d="M16 9.5l5 5M21 9.5l-5 5" />
+              </>
+            ) : (
+              <>
+                <path d="M15.5 8.5a4.2 4.2 0 0 1 0 7M18.5 6.5a8 8 0 0 1 0 11" />
+              </>
+            )}
+          </svg>
         </button>
       </div>
 
