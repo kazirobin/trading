@@ -50,13 +50,13 @@ export function TerminalToolbar({
   };
 
   return (
-    <div className="flex w-full shrink-0 flex-col items-center gap-2 pb-3 pt-2">
-      <div className="flex w-[60px] items-center justify-between">
+    <div className="flex w-full shrink-0 flex-col items-stretch gap-2 px-2 pb-3 pt-2">
+      <div className="flex w-full items-center justify-between">
         <button
           onClick={toggleFullscreen}
           title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
           aria-label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-          className={`grid h-7 w-7 place-items-center rounded-lg border border-white/5 bg-white/[0.04] text-neo-mut transition-all hover:border-sky-400/40 hover:text-sky-300 ${flash === 'fullscreen' ? 'border-sky-400/40 text-sky-300 shadow-[0_0_14px_-4px_rgba(56,189,248,0.8)]' : ''}`}
+          className={`grid h-8 w-8 place-items-center rounded-lg border border-white/5 bg-white/[0.04] text-neo-mut transition-all hover:border-sky-400/40 hover:text-sky-300 ${flash === 'fullscreen' ? 'border-sky-400/40 text-sky-300 shadow-[0_0_14px_-4px_rgba(56,189,248,0.8)]' : ''}`}
         >
           <IC d={fullscreen ? 'M10 4H5a1 1 0 0 0-1 1v5M14 4h5a1 1 0 0 1 1 1v5M10 20H5a1 1 0 0 1-1-1v-5M14 20h5a1 1 0 0 0 1-1v-5' : 'M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4'} />
         </button>
@@ -64,18 +64,15 @@ export function TerminalToolbar({
           onClick={goBack}
           title="Back"
           aria-label="Back"
-          className="grid h-7 w-7 place-items-center rounded-lg border border-white/5 bg-white/[0.04] text-neo-mut transition-all hover:border-sky-400/40 hover:text-sky-300"
+          className="grid h-8 w-8 place-items-center rounded-lg border border-white/5 bg-white/[0.04] text-neo-mut transition-all hover:border-sky-400/40 hover:text-sky-300"
         >
           <IC d="M4 12a9 9 0 1 0 3-6.7M4 4v5h5" />
         </button>
-      </div>
-
-      <div className="flex w-[60px] items-center justify-between">
         <button
           onClick={() => bump('settings', onOpenSettings)}
           title="Settings"
           aria-label="Settings"
-          className={`grid h-7 w-7 place-items-center rounded-lg border border-white/5 bg-white/[0.04] text-neo-mut transition-all hover:border-violet-400/40 hover:text-violet-300 ${flash === 'settings' ? 'border-violet-400/40 text-violet-300 shadow-[0_0_14px_-4px_rgba(167,139,250,0.8)]' : ''}`}
+          className={`grid h-8 w-8 place-items-center rounded-lg border border-white/5 bg-white/[0.04] text-neo-mut transition-all hover:border-violet-400/40 hover:text-violet-300 ${flash === 'settings' ? 'border-violet-400/40 text-violet-300 shadow-[0_0_14px_-4px_rgba(167,139,250,0.8)]' : ''}`}
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
             <path d="M4 6h10M18 6h2M4 12h3M11 12h9M4 18h8M16 18h4" />
@@ -89,7 +86,7 @@ export function TerminalToolbar({
           title={muted ? 'Unmute' : 'Mute'}
           aria-label={muted ? 'Unmute' : 'Mute'}
           aria-pressed={muted}
-          className={`grid h-7 w-7 place-items-center rounded-lg border border-white/5 bg-white/[0.04] text-neo-mut transition-all hover:text-emerald-300 ${
+          className={`grid h-8 w-8 place-items-center rounded-lg border border-white/5 bg-white/[0.04] text-neo-mut transition-all hover:text-emerald-300 ${
             muted ? 'border-rose-400/40 text-rose-400 shadow-[0_0_14px_-4px_rgba(251,113,133,0.8)]' : 'hover:border-emerald-400/40'
           }`}
         >
@@ -108,25 +105,25 @@ export function TerminalToolbar({
 
       <button
         onClick={() => bump('join', onJoinUsClick)}
-        className={`flex h-11 w-[66px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-blue-400/30 bg-gradient-to-b from-blue-500/20 to-blue-600/10 shadow-[0_8px_24px_-8px_rgba(59,130,246,0.7)] transition-all hover:-translate-y-0.5 hover:border-blue-300/50 hover:shadow-[0_10px_30px_-8px_rgba(59,130,246,0.9)] active:scale-[0.97] ${flash === 'join' ? 'brightness-125' : ''}`}
+        className={`flex h-11 w-full flex-row items-center justify-center gap-2 rounded-2xl border border-blue-400/30 bg-gradient-to-b from-blue-500/20 to-blue-600/10 shadow-[0_8px_24px_-8px_rgba(59,130,246,0.7)] transition-all hover:-translate-y-0.5 hover:border-blue-300/50 hover:shadow-[0_10px_30px_-8px_rgba(59,130,246,0.9)] active:scale-[0.97] ${flash === 'join' ? 'brightness-125' : ''}`}
         aria-label="Join us"
       >
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="#7db1ff" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+        <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="#7db1ff" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
           <path d="M4 6a2.5 2.5 0 0 1 2.5-2.5h8A2.5 2.5 0 0 1 17 6v4.5a2.5 2.5 0 0 1-2.5 2.5H11l-3.5 2.9V13H6.5A2.5 2.5 0 0 1 4 10.5V6z" />
           <path d="M17 9.5h1.5A2.5 2.5 0 0 1 21 12v3.5a2.5 2.5 0 0 1-2.5 2.5H17v2.6l-3.5-2.6h-2" />
         </svg>
-        <span className="text-[8px] font-extrabold uppercase tracking-[0.1em] text-white">Join us</span>
+        <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-white">Join us</span>
       </button>
 
       <button
         onClick={() => bump('help', onHelpClick)}
-        className="flex h-9 w-[66px] flex-col items-center justify-center gap-1 rounded-2xl border border-emerald-400/30 bg-gradient-to-b from-emerald-500/20 to-emerald-600/10 shadow-[0_8px_24px_-8px_rgba(16,185,129,0.7)] transition-all hover:-translate-y-0.5 hover:border-emerald-300/50 hover:shadow-[0_10px_30px_-8px_rgba(16,185,129,0.9)] active:scale-[0.97]"
+        className="flex h-10 w-full flex-row items-center justify-center gap-2 rounded-2xl border border-emerald-400/30 bg-gradient-to-b from-emerald-500/20 to-emerald-600/10 shadow-[0_8px_24px_-8px_rgba(16,185,129,0.7)] transition-all hover:-translate-y-0.5 hover:border-emerald-300/50 hover:shadow-[0_10px_30px_-8px_rgba(16,185,129,0.9)] active:scale-[0.97]"
         aria-label="Help"
       >
-        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none">
+        <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none">
           <circle cx="12" cy="12" r="4" fill="#fff" />
         </svg>
-        <span className="text-[8px] font-bold tracking-[0.04em] text-white">Help</span>
+        <span className="text-[10px] font-bold tracking-[0.04em] text-white">Help</span>
       </button>
     </div>
   );

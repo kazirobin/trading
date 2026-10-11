@@ -95,9 +95,9 @@ function TerminalInner() {
       <TerminalHeader status={status} onMenu={() => setSbOpen((o) => !o)} sidebarOpen={sbOpen} />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-2 lg:flex-row lg:gap-2.5">
         <TerminalSidebar open={sbOpen} onToggle={() => setSbOpen((o) => !o)} />
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto lg:flex-row lg:overflow-hidden lg:gap-2.5">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto md:flex-row md:overflow-hidden md:gap-2.5">
           <TerminalRatioBar symbol={symbol} />
-          <div className="flex min-h-[52vh] flex-col lg:min-h-0 lg:flex-1">
+          <div className="flex min-h-[52vh] flex-col md:min-h-0 md:flex-1">
             <TerminalChart symbol={symbol} onSymbolChange={setSymbol} />
           </div>
           <TerminalActionPanel asset={asset} price={price} trades={trades} message={message} onTrade={onTrade} />

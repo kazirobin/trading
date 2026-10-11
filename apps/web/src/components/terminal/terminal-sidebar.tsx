@@ -38,15 +38,15 @@ const nav: NavItem[] = [
 export function TerminalSidebar({ open = true, onToggle }: { open?: boolean; onToggle?: () => void }) {
   return (
     <aside
-      className={`hidden shrink-0 flex-col items-center overflow-hidden rounded-2xl glass-strong transition-[width,opacity] duration-300 ease-in-out lg:flex ${
-        open ? 'w-[76px] opacity-100' : 'w-0 opacity-0'
+      className={`hidden shrink-0 flex-col overflow-hidden rounded-2xl glass-strong transition-[width,opacity] duration-300 ease-in-out lg:flex ${
+        open ? 'w-[188px] opacity-100' : 'w-0 opacity-0'
       }`}
     >
       <button
         onClick={onToggle}
         title={open ? 'Hide sidebar' : 'Show sidebar'}
         aria-label={open ? 'Hide sidebar' : 'Show sidebar'}
-        className="mt-2 grid h-10 w-10 shrink-0 place-items-center rounded-xl text-neo-mut transition-colors hover:bg-white/5 hover:text-neo-text"
+        className="ml-auto mr-2 mt-2 grid h-9 w-9 shrink-0 place-items-center rounded-xl text-neo-mut transition-colors hover:bg-white/5 hover:text-neo-text"
       >
         <span className="grid h-8 w-8 place-items-center rounded-xl border border-transparent transition-all duration-200 hover:border-neo-line/60">
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -55,34 +55,37 @@ export function TerminalSidebar({ open = true, onToggle }: { open?: boolean; onT
         </span>
       </button>
 
-      <div className="h-px w-9 bg-gradient-to-r from-transparent via-neo-line to-transparent" />
+      <div className="mx-2.5 h-px bg-gradient-to-r from-transparent via-neo-line to-transparent" />
 
-      <div className="neo-scroll mt-3 flex w-full flex-1 flex-col items-center gap-1.5 overflow-y-auto pb-2">
+      <div className="neo-scroll mt-3 flex w-full min-w-0 flex-1 flex-col gap-1 overflow-y-auto px-2 pb-2">
         {nav.map(({ label, active, badge, d }) => (
           <Link
             key={label}
             href={label === 'TRADE' ? '/trade' : '/'}
             title={label}
             aria-label={label}
-            className="group relative flex w-[62px] flex-col items-center gap-1 rounded-xl px-1 py-2 transition-all duration-200 hover:bg-white/[0.06]"
+            className="group relative flex min-w-0 w-full flex-row items-center gap-2.5 rounded-xl px-2.5 py-2 transition-all duration-200 hover:bg-white/[0.06]"
           >
             {active && (
-              <span className="absolute inset-0 rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.09] to-transparent shadow-[0_0_20px_-4px_rgba(43,153,255,0.35)]" />
-            )}
-            {typeof badge === 'number' && (
-              <span className="absolute -right-0.5 -top-0.5 z-20 grid h-4 min-w-[16px] place-items-center rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-1 text-[10px] font-bold text-black shadow-[0_0_12px_-2px_rgba(251,191,36,0.9)]">
-                {badge}
-              </span>
+              <>
+                <span className="absolute inset-0 rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.09] to-transparent shadow-[0_0_20px_-4px_rgba(43,153,255,0.35)]" />
+                <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-gradient-to-b from-sky-400 to-violet-500 shadow-[0_0_10px_rgba(43,153,255,0.8)]" />
+              </>
             )}
             <I
               d={d}
-              className={`relative z-10 h-5 w-5 transition-all duration-200 group-hover:-translate-y-0.5 ${
-                active ? 'text-white drop-shadow-[0_0_8px_rgba(43,153,255,0.8)]' : 'text-neo-mut group-hover:text-white'
+              className={`relative z-10 h-5 w-5 shrink-0 transition-all duration-200 group-hover:-translate-y-0.5 ${
+                active ? 'text-sky-300 drop-shadow-[0_0_8px_rgba(43,153,255,0.8)]' : 'text-neo-mut group-hover:text-white'
               }`}
             />
-            <span className={`relative z-10 text-center text-[7px] font-extrabold uppercase leading-[1.25] tracking-[0.02em] ${active ? 'text-neo-text' : 'text-neo-mut group-hover:text-neo-text'}`}>
+            <span className={`relative z-10 min-w-0 truncate text-[11px] font-extrabold uppercase leading-none tracking-[0.03em] ${active ? 'text-white' : 'text-neo-mut group-hover:text-neo-text'}`}>
               {label}
             </span>
+            {typeof badge === 'number' && (
+              <span className="relative z-20 ml-auto grid h-4 min-w-[16px] shrink-0 place-items-center rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-1 text-[10px] font-bold text-black shadow-[0_0_12px_-2px_rgba(251,191,36,0.9)]">
+                {badge}
+              </span>
+            )}
           </Link>
         ))}
       </div>

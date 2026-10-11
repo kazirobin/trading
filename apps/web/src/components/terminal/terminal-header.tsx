@@ -24,7 +24,6 @@ export function TerminalHeader({
 }) {
   const { user, logout } = useAuth();
   const [bell, setBell] = useState(false);
-  const [bonus, setBonus] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [balance, setBalance] = useState<number | null>(null);
 
@@ -70,24 +69,31 @@ export function TerminalHeader({
           Web <span className="text-grad">Trading</span> Platform
         </span>
       </Link>
-      <div className="mx-auto hidden min-w-0 flex-1 items-center justify-center xl:flex">
-        {bonus && (
-          <div className="flex items-center gap-2.5 rounded-xl border border-emerald-400/30 bg-gradient-to-r from-emerald-500/15 to-teal-500/5 px-3 py-1.5 shadow-[0_0_24px_-8px_rgba(16,185,129,0.7)]">
-            <span className="grid h-5 w-5 place-items-center rounded-full text-emerald-300">
-              <Icon d="M5 15l4-8 3 5 3-6 4 9" className="h-3.5 w-3.5" />
-            </span>
-            <span className="whitespace-nowrap text-[13px] font-medium text-emerald-100">
-              Get a <b className="font-bold text-white">50% bonus</b> on your deposit!
-            </span>
-            <span className="rounded bg-emerald-400 px-1.5 py-0.5 text-[11px] font-bold text-black">50%</span>
-            <button onClick={() => setBonus(false)} className="grid h-5 w-5 place-items-center rounded text-emerald-100/60 hover:bg-white/10 hover:text-white" aria-label="Close">
-              <Icon d="M6 6l12 12M18 6L6 18" className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
 
       <div className="ml-auto flex items-center gap-2">
+        <div className="relative">
+          <button
+            onClick={() => {
+              setBell((v) => !v);
+              setMenuOpen(false);
+            }}
+            className="relative grid h-9 w-9 place-items-center rounded-xl border border-white/5 bg-white/[0.04] text-neo-mut transition-all hover:border-sky-400/40 hover:text-white"
+            aria-label="Notifications"
+          >
+            <Icon d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 21h4" />
+            <span className="absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-gradient-to-r from-sky-400 to-violet-500 px-1 text-[10px] font-bold text-white shadow-[0_0_10px_-2px_rgba(43,153,255,0.9)]">1</span>
+          </button>
+          {bell && (
+            <div className="neo-pop absolute right-0 top-[calc(100%+10px)] w-72 rounded-xl glass-strong p-3 shadow-2xl">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-neo-mut">Notifications</p>
+              <div className="space-y-2 text-sm text-neo-text">
+                <div className="rounded-lg bg-white/[0.04] p-2.5">50% deposit bonus is active</div>
+                <div className="rounded-lg bg-white/[0.04] p-2.5">Withdrawal verified successfully</div>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="relative">
           <button
             onClick={() => {
@@ -155,35 +161,9 @@ export function TerminalHeader({
           )}
         </div>
 
-        <div className="relative">
-          <button
-            onClick={() => {
-              setBell((v) => !v);
-              setMenuOpen(false);
-            }}
-            className="relative grid h-9 w-9 place-items-center rounded-xl border border-white/5 bg-white/[0.04] text-neo-mut transition-all hover:border-sky-400/40 hover:text-white"
-            aria-label="Notifications"
-          >
-            <Icon d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 21h4" />
-            <span className="absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-gradient-to-r from-sky-400 to-violet-500 px-1 text-[10px] font-bold text-white shadow-[0_0_10px_-2px_rgba(43,153,255,0.9)]">1</span>
-          </button>
-          {bell && (
-            <div className="neo-pop absolute right-0 top-[calc(100%+10px)] w-72 rounded-xl glass-strong p-3 shadow-2xl">
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-neo-mut">Notifications</p>
-              <div className="space-y-2 text-sm text-neo-text">
-                <div className="rounded-lg bg-white/[0.04] p-2.5">50% deposit bonus is active</div>
-                <div className="rounded-lg bg-white/[0.04] p-2.5">Withdrawal verified successfully</div>
-              </div>
-            </div>
-          )}
-        </div>
-
         <Link href="/wallet" className="hidden items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 px-3.5 py-2 text-sm font-bold text-black shadow-[0_6px_18px_-8px_rgba(16,185,129,0.9)] transition-all hover:brightness-110 sm:flex">
           <Icon d="M12 5v14M5 12h14" className="h-4 w-4" />
           Deposit
-        </Link>
-        <Link href="/wallet" className="hidden rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm font-semibold text-white transition-all hover:border-rose-400/40 hover:bg-white/[0.08] sm:block">
-          Withdrawal
         </Link>
       </div>
     </header>

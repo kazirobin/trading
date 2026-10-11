@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Web Trading Platform — Trade Terminal</title>
+
+<!-- ============================================================
+  Single-file Trading Terminal (standalone demo).
+  Same layout/behavior as the NEXT.js app:
+    * Dark navy theme (#0d1117 / #131722 / #0f131d)
+    * Floating glass sidebar + neon nav
+    * Candlestick chart via lightweight-charts (CDN)
+    * Live price via Binance public WebSocket (no backend needed)
+    * Klines via Binance public REST (with offline fallback data)
+    * Trading UI: time/investment steppers, UP/DOWN buttons,
+      Recent Trades card, UTC clock, buy/sell ratio, timeframe toolbar.
+  CDN links used: lightweight-charts (charting only).
+  Everything else is plain ES6 + CSS, zero dependencies.
+============================================================ -->
+
+<!-- CDN: candlestick charting library -->
+<script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+
+<style>
+  /* ============================ THEME TOKENS ============================ */
+  :root {
+    --bg:      #0d1117;  /* app shell */
+    --bg2:     #161b22;  /* deep panel (chart grid) */
+    --panel:   #131722;  /* floating cards (right panel) */
+    --inner:   #0f131d;  /* input boxes */
+    --line:    #26324a;  /* subtle borders */
+    --text:    #e6edf3;
+    --muted:   #8395a8;
+    --blue:    #2b99ff;
+    --violet:  #8b5cf6;
+    --green:   #10b981;
+    --red:     #ff5470;
+    --coral:   #ef4444;
+    --amber:   #ffc93c;
+    --glass-bg: rgba(13,17,23,0.68);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    background: #080b12;
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  button { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  a { color: inherit; text-decoration: none; }
+  svg { display: block; }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: rgba(131,149,168,0.25); border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  .glass {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  /* ============================ LAYOUT SHELL ============================ */
+  .shell {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 100dvh;
+    width: 100%;
+    padding: 8px 8px 0;
+    background: var(--bg);
+    overflow: hidden;
+  }
+  .row { display: flex; flex-direction: column; gap: 8px; min-height: 0; min-width: 0; flex: 1; }
+  .main {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    min-width: 0;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  @media (min-width: 768px) {
+    .main { flex-direction: row; overflow: hidden; gap: 10px; }
+  }
+  @media (min-width: 1024px) {
+    .shell { padding: 10px 10px 0; gap: 10px; }
+    .row { flex-direction: row; gap: 10px; }
+  }
+
+  /* ============================ HEADER ============================ */
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 56px;
+    flex-shrink: 0;
+    border-radius: 16px;
+    padding: 0 12px;
+  }
+  @media (min-width: 1024px) { .bar { padding: 0 16px; } }
+
+  .icon-btn {
+    display: grid;
+    place-items: center;
+    width: 36px; height: 36px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.04);
+    color: var(--muted);
+    transition: all .15s ease;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { border-color: rgba(43,153,255,0.4); color: #fff; }
+
+  .logo-chip {
+    display: grid; place-items: center;
+    width: 32px; height: 32px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #38bdf8, #3b82f6, #7c3aed);
+    box-shadow: 0 0 20px -4px rgba(43,153,255,0.8);
+  }
+  .wordmark { display: none; font-size: 15px; font-weight: 800; letter-spacing: .2px; color: #fff; }
+  .wordmark span { background: linear-gradient(90deg, #38bdf8, #8b5cf6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  @media (min-width: 1280px) { .wordmark { display: block; } }
+
+  .head-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+  /* account pill */
+  .pill {
+    display: flex; align-items: center; gap: 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.04);
+    padding: 6px 10px;
+    transition: border-color .15s ease;
+  }
+  .pill:hover { border-color: rgba(43,153,255,0.4); }
+  .avatar {
+    display: grid; place-items: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, #38bdf8, #7c3aed);
+    font-size: 12px; font-weight: 700; color: #fff;
+    box-shadow: 0 0 14px -4px rgba(43,153,255,0.8);
+  }
+  .pill-text { display: flex; flex-direction: column; line-height: 1.2; text-align: left; }
+  .pill-label { font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #fcd34d; }
+  .pill-val { font-size: 14px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+  .pill-caret { color: var(--muted); }
+
+  /* deposit button */
+  .btn-deposit {
+    display: none;
+    align-items: center; gap: 6px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #34d399, #14b8a6);
+    color: #000;
+    font-size: 14px; font-weight: 700;
+    padding: 8px 14px;
+    box-shadow: 0 6px 18px -8px rgba(16,185,129,0.9);
+    transition: filter .15s ease;
+  }
+  .btn-deposit:hover { filter: brightness(1.1); }
+  @media (min-width: 640px) { .btn-deposit { display: flex; } }
+
+  /* dropdowns */
+  .dd-wrap { position: relative; }
+  .dd {
+    position: absolute; right: 0; top: calc(100% + 10px); z-index: 60;
+    min-width: 240px;
+    border-radius: 12px;
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 6px;
+    box-shadow: 0 24px 48px rgba(0,0,0,0.5);
+    animation: pop .16s ease;
+  }
+  @keyframes pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; } }
+  .dd .head { border-radius: 8px; background: rgba(255,255,255,0.04); padding: 10px 12px; }
+  .dd .head p:first-child { font-size: 14px; font-weight: 600; color: #fff; }
+  .dd .head p:last-child { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .m-item { display: block; width: 100%; text-align: left; border-radius: 8px; padding: 9px 12px; font-size: 13px; color: var(--text); }
+  .m-item:hover { background: rgba(255,255,255,0.06); }
+  .m-item.red { color: #fda4af; }
+  .dd .txt { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin: 8px 12px 6px; }
+  .ntf { border-radius: 8px; background: rgba(255,255,255,0.04); padding: 10px 12px; font-size: 13px; margin-bottom: 6px; }
+  .bell-badge {
+    position: absolute; right: -4px; top: -4px;
+    display: grid; place-items: center;
+    min-width: 16px; height: 16px; border-radius: 50%;
+    background: linear-gradient(90deg, #38bdf8, #8b5cf6);
+    font-size: 10px; font-weight: 700; color: #fff;
+    box-shadow: 0 0 10px -2px rgba(43,153,255,0.9);
+    padding: 0 3px;
+  }
+
+  /* ============================ SIDEBAR (>=1024) ============================ */
+  .sidebar {
+    display: none;
+    flex-shrink: 0;
+    flex-direction: column;
+    border-radius: 16px;
+    overflow: hidden;
+    width: 0; opacity: 0;
+    transition: width .3s ease, opacity .3s ease;
+  }
+  .sidebar.open { width: 188px; opacity: 1; }
+  @media (min-width: 1024px) { .sidebar { display: flex; } }
+
+  .s-toggle { margin: 8px 8px 0 auto; }
+  .s-divider {
+    margin: 8px 10px 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line), transparent);
+  }
+  .s-nav { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding: 12px 8px 8px; }
+  .s-item {
+    position: relative;
+    display: flex; align-items: center; gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-size: 11px; font-weight: 800; letter-spacing: .03em;
+    color: var(--muted);
+    transition: background .15s ease, color .15s ease;
+  }
+  .s-item:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+  .s-item .ico { transition: transform .15s ease; }
+  .s-item:hover .ico { transform: translateY(-2px); }
+  .s-item.active { color: #fff; }
+  .s-item.active .ico { color: #7dd3fc; filter: drop-shadow(0 0 8px rgba(43,153,255,0.8)); }
+  .s-item.active::before {
+    content: ""; position: absolute; inset: 0; border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: linear-gradient(180deg, rgba(255,255,255,0.09), transparent);
+    box-shadow: 0 0 20px -4px rgba(43,153,255,0.35);
+  }
+  .s-item.active::after {
+    content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 20px; border-radius: 4px;
+    background: linear-gradient(180deg, #38bdf8, #8b5cf6);
+    box-shadow: 0 0 10px rgba(43,153,255,0.8);
+  }
+  .s-item .lbl { position: relative; z-index: 1; }
+
+  /* sidebar footer toolbar */
+  .s-tools { display: flex; flex-direction: column; gap: 8px; padding: 8px; }
+  .tool-row { display: flex; justify-content: space-between; gap: 4px; }
+  .tool-btn { flex: 1; display: grid; place-items: center; height: 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.04); color: var(--muted); }
+  .tool-btn:hover { border-color: rgba(56,189,248,0.4); color: #7dd3fc; }
+  .pill-join, .pill-help {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; border-radius: 16px; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #fff;
+    transition: all .15s ease;
+  }
+  .pill-join { height: 44px; border: 1px solid rgba(96,165,250,0.3); background: linear-gradient(180deg, rgba(59,130,246,0.2), rgba(37,99,235,0.1)); box-shadow: 0 8px 24px -8px rgba(59,130,246,0.7); }
+  .pill-join:hover { transform: translateY(-2px); box-shadow: 0 10px 30px -8px rgba(59,130,246,0.9); }
+  .pill-help { height: 40px; border: 1px solid rgba(52,211,153,0.3); background: linear-gradient(180deg, rgba(16,185,129,0.2), rgba(5,150,105,0.1)); box-shadow: 0 8px 24px -8px rgba(16,185,129,0.7); }
+  .pill-help:hover { transform: translateY(-2px); box-shadow: 0 10px 30px -8px rgba(16,185,129,0.9); }
+  .flash { filter: brightness(1.25) !important; }
+
+  /* ============================ RATIO BAR (>=1024) ============================ */
+  .ratio {
+    display: none;
+    flex-shrink: 0;
+    width: 36px;
+    flex-direction: column; align-items: center; gap: 10px;
+    border-radius: 16px; padding: 12px 0;
+  }
+  @media (min-width: 1024px) { .ratio { display: flex; } }
+  .ratio-pct { font-size: 10px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .ratio-pct.buy { color: #6ee7b7; text-shadow: 0 0 6px rgba(16,185,129,0.6); }
+  .ratio-pct.sell { color: #fda4af; text-shadow: 0 0 6px rgba(255,84,112,0.6); }
+  .ratio-track { position: relative; width: 8px; flex: 1; border-radius: 8px; background: rgba(38,50,74,0.4); overflow: hidden; }
+  .ratio-up { position: absolute; left: 0; right: 0; top: 0; border-radius: 8px; background: linear-gradient(180deg, #34d399, #14b8a6); box-shadow: 0 0 12px 2px rgba(16,185,129,0.45); transition: height .7s ease; }
+  .ratio-down { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 8px; background: linear-gradient(0deg, #fb7185, #f43f5e); box-shadow: 0 0 12px 2px rgba(255,84,112,0.45); transition: height .7s ease; }
+  .ratio-handle { position: absolute; left: 50%; width: 12px; height: 12px; transform: translateX(-50%); border-radius: 50%; border: 2px solid #fff; background: var(--bg); box-shadow: 0 0 10px rgba(255,255,255,0.5); transition: top .7s ease; }
+
+  /* ============================ CHART CARD ============================ */
+  .chartcard {
+    position: relative;
+    display: flex; flex-direction: column;
+    min-height: 52vh;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--bg);
+    flex: 1;
+    min-width: 0;
+  }
+  @media (min-width: 768px) { .chartcard { min-height: 0; } }
+  .chart-canvas { position: absolute; inset: 0; z-index: 0; }
+
+  .watermark {
+    position: absolute; left: 50%; top: 50%; z-index: 5;
+    transform: translate(-50%, -50%) rotate(-14deg);
+    font-size: 7rem; font-weight: 900; letter-spacing: .2em; text-transform: uppercase;
+    color: rgba(255,255,255,0.03);
+    pointer-events: none; user-select: none;
+  }
+  @media (min-width: 1024px) { .watermark { font-size: 10rem; } }
+
+  /* asset tabs (top-left) */
+  .tabs { position: absolute; left: 8px; top: 8px; z-index: 20; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px; pointer-events: none; }
+  .tabs > * { pointer-events: auto; }
+  .tab {
+    display: flex; align-items: center; gap: 8px;
+    border-radius: 12px; padding: 6px 8px; font-size: 12px;
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    transition: all .2s ease;
+  }
+  .tab.on { background: var(--glass-bg); border: 1px solid rgba(96,165,250,0.3); box-shadow: 0 0 20px -6px rgba(43,153,255,0.6); color: var(--text); }
+  .tab.off { background: rgba(255,255,255,0.03); color: var(--muted); }
+  .tab.off:hover { background: rgba(255,255,255,0.07); color: var(--text); }
+  .tab-main { display: flex; align-items: center; gap: 6px; }
+  .flags { display: flex; }
+  .flags > span:first-child { margin-right: -6px; }
+  .f-base, .f-quote {
+    display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+    font-size: 9px; font-weight: 700; color: #fff;
+    border: 2px solid var(--bg);
+  }
+  .f-base { background: linear-gradient(135deg, #22d3ee, #2563eb); }
+  .f-quote { background: linear-gradient(135deg, #fbbf24, #f97316); }
+  .tab .nm { font-weight: 600; }
+  .tab .otc { font-size: 9px; color: var(--muted); text-transform: uppercase; font-weight: 600; margin-left: 4px; }
+  .tab .pay { font-weight: 700; color: var(--amber); }
+  .tab .x { color: var(--muted); }
+  .tab .x:hover { color: var(--red); }
+
+  .add-btn { display: grid; place-items: center; height: 30px; min-width: 26px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.03); color: var(--muted); padding: 0 4px; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+  .add-btn:hover { border-color: rgba(43,153,255,0.4); color: #fff; }
+  .add-dd { width: 256px; border-radius: 12px; overflow: hidden; padding: 6px; box-shadow: 0 24px 48px rgba(0,0,0,0.5); animation: pop .16s ease; }
+  .add-it {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; border-radius: 8px; padding: 8px; font-size: 13px;
+  }
+  .add-it:hover { background: rgba(255,255,255,0.06); }
+  .add-it .l { display: flex; align-items: center; gap: 8px; }
+  .add-it .coin { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #38bdf8, #2563eb); font-size: 9px; font-weight: 700; color: #fff; }
+  .add-it .pay { font-weight: 700; color: var(--amber); }
+
+  /* clock + pair info (under tabs) */
+  .meta-l { position: absolute; left: 8px; top: 46px; z-index: 20; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; pointer-events: none; }
+  .meta-l > * { pointer-events: auto; }
+  .clock { display: flex; align-items: center; gap: 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.04); padding: 2px 8px; font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+  .clock .u { color: var(--muted); }
+  .pair-info {
+    display: flex; align-items: center; gap: 6px;
+    border-radius: 50px;
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
+    padding: 4px 12px; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fff;
+    box-shadow: 0 6px 16px -6px rgba(43,153,255,0.8);
+  }
+  .pair-info:hover { filter: brightness(1.1); }
+
+  /* price pill (top-right) */
+  .price-pill { position: absolute; right: 12px; top: 8px; z-index: 20; pointer-events: none; }
+  .price-pill span {
+    display: inline-flex; align-items: center;
+    border-radius: 50px; padding: 2px 12px;
+    border: 1px solid rgba(96,165,250,0.4);
+    background: rgba(13,17,23,0.7);
+    color: #7dd3fc; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    box-shadow: 0 0 20px -6px rgba(43,153,255,0.7);
+  }
+
+  /* trade interval markers */
+  .markers { position: absolute; inset: 16px 0; z-index: 5; pointer-events: none; }
+  .mk { position: absolute; top: 24px; bottom: 24px; border-left: 1px dashed rgba(103,232,249,0.25); }
+  .mk.end { border-color: rgba(56,189,248,0.4); }
+  .mk .lbl {
+    position: absolute; left: -1px; top: 25%; transform: translateX(-50%);
+    white-space: nowrap; padding: 2px 6px; border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.05); background: rgba(13,17,23,0.7);
+    font-size: 8px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,0.5);
+  }
+  .mk.end .lbl { border-color: rgba(56,189,248,0.3); color: #38bdf8; }
+
+  /* left drawing toolbar */
+  .draw-tools { position: absolute; left: 12px; top: 50%; z-index: 20; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); background: rgba(13,17,23,0.6); padding: 4px; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+  .draw-btn { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 12px; color: var(--muted); }
+  .draw-btn:hover { background: rgba(255,255,255,0.06); color: #7dd3fc; }
+  .draw-btn.on { background: linear-gradient(180deg, #38bdf8, #2563eb); color: #fff; box-shadow: 0 0 14px -4px rgba(43,153,255,0.8); }
+
+  /* timeframe toolbar (bottom-left) */
+  .tfbar { position: absolute; bottom: 12px; left: 12px; z-index: 20; display: flex; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); background: rgba(13,17,23,0.7); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+  .tf { padding: 6px 10px; font-size: 10px; font-weight: 700; color: var(--muted); transition: all .15s ease; }
+  .tf:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .tf.on { background: linear-gradient(180deg, #38bdf8, #2563eb); color: #fff; }
+
+  /* zoom (bottom-center) */
+  .zoom { position: absolute; bottom: 12px; left: 50%; z-index: 20; transform: translateX(-50%); display: flex; align-items: center; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); background: rgba(13,17,23,0.7); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+  .zoom button { display: grid; place-items: center; width: 36px; height: 32px; color: var(--muted); font-size: 16px; }
+  .zoom button:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .zoom .sep { width: 1px; height: 16px; background: rgba(255,255,255,0.1); }
+
+  /* live indicator (bottom-right) */
+  .live { position: absolute; bottom: 12px; right: 12px; z-index: 20; display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
+  .live .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .live .dot.live { background: var(--green); box-shadow: 0 0 10px 2px rgba(16,185,129,0.7); }
+  .live .dot.off { background: var(--red); box-shadow: 0 0 10px 2px rgba(255,84,112,0.7); }
+  .live .dot.conn { background: var(--muted); }
+  .live.live { color: #6ee7b7; } .live.off { color: #fda4af; } .live.conn { color: var(--muted); }
+
+  /* ============================ RIGHT PANEL ============================ */
+  .panel {
+    width: 100%;
+    flex-shrink: 0;
+    flex-direction: column;
+    gap: 10px;
+    display: flex;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.05);
+    background: #0b0e17;
+    padding: 10px;
+    overflow-y: auto;
+    max-height: none;
+  }
+  @media (min-width: 768px) { .panel { width: 300px; } }
+
+  .card { display: flex; flex-direction: column; gap: 12px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06); background: var(--panel); padding: 12px; }
+
+  .asset-head { display: flex; align-items: center; justify-content: space-between; }
+  .asset-l { display: flex; align-items: center; gap: 10px; }
+  .coin {
+    display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+    font-size: 14px; font-weight: 800; color: #fff;
+  }
+  .asset-nm { display: flex; flex-direction: column; line-height: 1.2; }
+  .asset-nm .t { font-size: 15px; font-weight: 700; color: #fff; }
+  .asset-nm .s { font-size: 11px; color: var(--muted); }
+  .asset-pay { display: flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 700; color: #fcd34d; font-variant-numeric: tabular-nums; }
+
+  .inbox { display: flex; flex-direction: column; gap: 8px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: var(--inner); padding: 10px; }
+  .inbox .cap { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .inbox .row { flex-direction: row; align-items: center; justify-content: space-between; gap: 0; }
+  .inbox .l { display: flex; align-items: center; gap: 8px; }
+  .svg-ico { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--muted); }
+  .inbox .val { font-size: 16px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+  .step-row { display: flex; gap: 6px; }
+  .step { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); }
+  .step:hover { border-color: rgba(43,153,255,0.4); background: rgba(255,255,255,0.09); }
+  .step:disabled { opacity: .4; cursor: default; }
+
+  .payout-row { display: flex; align-items: flex-end; justify-content: space-between; padding: 0 2px; }
+  .payout-row .l { display: flex; flex-direction: column; line-height: 1.2; }
+  .payout-row .l .t { font-size: 12px; color: #fff; }
+  .payout-row .l .v { font-size: 13px; font-weight: 600; color: var(--green); font-variant-numeric: tabular-nums; }
+  .payout-row .big { font-size: 24px; font-weight: 800; line-height: 1; color: var(--green); font-variant-numeric: tabular-nums; }
+
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn-trade { display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 12px; padding: 12px 0; font-size: 15px; font-weight: 800; color: #fff; transition: all .15s ease; }
+  .btn-trade:hover { filter: brightness(1.1); }
+  .btn-trade:active { transform: scale(.97); }
+  .btn-up { background: #10b981; }
+  .btn-down { background: #ef4444; }
+
+  .msg { text-align: center; font-size: 11px; font-weight: 500; }
+  .msg.ok { color: #6ee7b7; } .msg.err { color: #fda4af; }
+  .live-line { text-align: center; font-size: 10px; color: var(--muted); }
+
+  /* recent trades */
+  .trades-card { display: flex; flex-direction: column; gap: 10px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06); background: var(--panel); padding: 12px; }
+  .trades-head { display: flex; align-items: center; justify-content: space-between; }
+  .trades-head .t { font-size: 14px; font-weight: 700; color: #fff; }
+  .view-all { font-size: 11.5px; font-weight: 600; color: #38bdf8; }
+  .view-all:hover { text-decoration: underline; }
+  .trades-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .trow {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    align-items: center;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.02);
+    padding: 14px 8px;
+  }
+  .trow .c1 { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .trow .c1 .col { display: flex; flex-direction: column; gap: 4px; min-width: 0; line-height: 1.1; }
+  .trow .sym { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; }
+  .trow .tm { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .trow .amt { justify-self: center; transform: translateY(1px); font-size: 14px; font-weight: 700; color: #fff; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .trow .c3 { display: flex; justify-content: flex-end; }
+  .trow .c3 .col { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; line-height: 1.1; }
+  .trow .spend { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .trow .res { font-size: 12px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .coin-xs { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; font-size: 12px; font-weight: 800; color: #fff; flex-shrink: 0; }
+  .trow .arr { width: 12px; height: 12px; }
+  .flag-mini { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; border: 2px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+  .pend-note { text-align: center; font-size: 9px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+
+  /* ============================ MOBILE NAV (<=1023) ============================ */
+  .mnav {
+    position: sticky; bottom: 0; left: 0; right: 0; z-index: 40;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    width: 100%; flex-shrink: 0;
+    border-radius: 16px;
+  }
+  @media (min-width: 1024px) { .mnav { display: none; } }
+  .mnav a { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; font-size: 11px; font-weight: 600; color: var(--muted); border-radius: 16px; }
+  .mnav a.on { color: #fff; }
+  .mnav a .ic { position: relative; }
+  .mnav a .dot { position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 8px 2px rgba(43,153,255,0.8); }
+  .mnav .badge { position: absolute; right: -10px; top: -6px; display: grid; place-items: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 50%; font-size: 10px; font-weight: 700; color: #fff; background: linear-gradient(90deg, #38bdf8, #8b5cf6); }
+  .mnav .badge.amber { color: #000; background: linear-gradient(90deg, #fbbf24, #f97316); }
+</style>
+</head>
+<body>
+<div class="shell" id="shell">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="bar glass">
+    <button class="icon-btn ham" id="ham" aria-label="Show sidebar" style="display:grid">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+
+    <a class="logo" href="#" style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <span class="logo-chip">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 4 8-9"/><path d="M15 6h5v5"/></svg>
+      </span>
+      <span class="wordmark">Web <span>Trading</span> Platform</span>
+    </a>
+
+    <div class="head-right">
+      <!-- notifications (first) -->
+      <div class="dd-wrap">
+        <button class="icon-btn" id="bellBtn" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 21h4"/></svg>
+          <span class="bell-badge">1</span>
+        </button>
+        <div class="dd bell-dd" id="bellDd" style="width:288px;display:none">
+          <p class="txt">Notifications</p>
+          <div class="ntf">50% deposit bonus is active</div>
+          <div class="ntf">Withdrawal verified successfully</div>
+        </div>
+      </div>
+
+      <!-- demo account (middle) -->
+      <div class="dd-wrap">
+        <button class="pill" id="accBtn" aria-label="Account menu">
+          <span class="avatar">T</span>
+          <span class="pill-text">
+            <span class="pill-label">Demo account</span>
+            <span class="pill-val">$10,000.00</span>
+          </span>
+          <svg class="pill-caret" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="dd acc-dd" id="accDd" style="width:240px;display:none">
+          <div class="head"><p>Demo account</p><p>Log in to trade with real funds</p></div>
+          <button class="m-item" data-link="#login">Log in</button>
+          <button class="m-item" data-link="#register">Create account</button>
+        </div>
+      </div>
+
+      <!-- deposit (last) -->
+      <a class="btn-deposit" href="#deposit">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Deposit
+      </a>
+    </div>
+  </header>
+
+  <!-- ==================== BODY ROW ==================== -->
+  <div class="row">
+    <!-- ============ SIDEBAR (desktop) ============ -->
+    <aside class="sidebar glass" id="sidebar">
+      <button class="icon-btn s-toggle" id="sbToggle" aria-label="Show sidebar" style="margin:8px 8px 0 auto">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="s-divider"></div>
+      <div class="s-nav" id="sNav"></div>
+      <div class="s-tools">
+        <div class="tool-row">
+          <button class="tool-btn" id="toolFS" aria-label="Fullscreen">
+            <svg viewBox="0 0 24 24" width="16" height="16" id="fsIco" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/></svg>
+          </button>
+          <button class="tool-btn" id="toolBack" aria-label="Back">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a9 9 0 1 0 3-6.7M4 4v5h5"/></svg>
+          </button>
+        </div>
+        <div class="tool-row">
+          <button class="tool-btn" id="toolSet" aria-label="Settings">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h3M11 12h9M4 18h8M16 18h4"/><circle cx="15" cy="6" r="1.9"/><circle cx="8" cy="12" r="1.9"/><circle cx="13" cy="18" r="1.9"/></svg>
+          </button>
+          <button class="tool-btn" id="toolMute" aria-label="Mute">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor" fill-opacity=".25"/><path id="muteL" d="M15.5 8.5a4.2 4.2 0 0 1 0 7M18.5 6.5a8 8 0 0 1 0 11"/></svg>
+          </button>
+        </div>
+        <button class="pill-join" id="joinBtn">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#7db1ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a2.5 2.5 0 0 1 2.5-2.5h8A2.5 2.5 0 0 1 17 6v4.5a2.5 2.5 0 0 1-2.5 2.5H11l-3.5 2.9V13H6.5A2.5 2.5 0 0 1 4 10.5V6z"/><path d="M17 9.5h1.5A2.5 2.5 0 0 1 21 12v3.5a2.5 2.5 0 0 1-2.5 2.5H17v2.6l-3.5-2.6h-2"/></svg>
+          Join Us
+        </button>
+        <button class="pill-help" id="helpBtn">
+          <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="4" fill="#fff"/></svg>
+          Help
+        </button>
+      </div>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <main class="main">
+      <!-- ratio bar -->
+      <aside class="ratio glass" aria-label="Buy / Sell ratio">
+        <span class="ratio-pct buy" id="ratioBuy">50%</span>
+        <div class="ratio-track">
+          <div class="ratio-up" id="ratioUp" style="height:50%"></div>
+          <div class="ratio-down" id="ratioDown" style="height:50%"></div>
+          <span class="ratio-handle" id="ratioHandle" style="top:calc(50% - 6px)"></span>
+        </div>
+        <span class="ratio-pct sell" id="ratioSell">50%</span>
+      </aside>
+
+      <!-- chart card -->
+      <div class="chartcard">
+        <div class="chart-canvas" id="chart"></div>
+        <span class="watermark">Demo</span>
+
+        <div class="tabs" id="tabs"></div>
+
+        <div class="meta-l">
+          <span class="clock"><span id="clock">--:--:--</span> <span class="u">UTC</span></span>
+          <button class="pair-info">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01" stroke-linecap="round"/></svg>
+            Pair information
+          </button>
+        </div>
+
+        <div class="price-pill"><span id="price">—</span></div>
+
+        <div class="markers">
+          <div class="mk" style="left:63%">
+            <span class="lbl" style="color:rgba(255,255,255,0.5)">Beginning of trade</span>
+          </div>
+          <div class="mk end" style="left:84%">
+            <span class="lbl">End of trade</span>
+          </div>
+        </div>
+
+        <div class="draw-tools">
+          <button class="draw-btn" aria-label="Draw">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          </button>
+          <button class="draw-btn on" aria-label="Chart type">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="4" y="10" width="3" height="8" rx=".5"/><rect x="10.5" y="6" width="3" height="10" rx=".5"/><rect x="17" y="9" width="3" height="6" rx=".5"/></svg>
+          </button>
+          <button class="draw-btn" aria-label="Crosshair">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 4v16M4 12h16M12 12h.01"/></svg>
+          </button>
+        </div>
+
+        <div class="tfbar" id="tfbar"></div>
+
+        <div class="zoom">
+          <button id="zoomIn" aria-label="Zoom in" style="font-weight:800">+</button>
+          <span class="sep"></span>
+          <button id="zoomOut" aria-label="Zoom out" style="font-weight:800">−</button>
+        </div>
+
+        <span class="live conn" id="live"><span class="dot conn"></span><span id="liveTxt">Loading</span></span>
+      </div>
+
+      <!-- ============ RIGHT PANEL ============ -->
+      <aside class="panel" id="panel">
+        <!-- trade card -->
+        <div class="card">
+          <div class="asset-head">
+            <span class="asset-l">
+              <span class="coin" id="coinIco">₿</span>
+              <span class="asset-nm">
+                <span class="t" id="assetLabel">BTC/USD</span>
+                <span class="s" id="assetPct">82%</span>
+              </span>
+            </span>
+            <span class="asset-pay" id="assetPay">
+              <span>82%</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </span>
+          </div>
+
+          <div class="inbox">
+            <span class="cap">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              Time
+            </span>
+            <div class="row">
+              <span class="l">
+                <span class="svg-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 12l3.5-3.5"/></svg></span>
+                <span class="val" id="timeVal">00:01:00</span>
+              </span>
+              <span class="step-row">
+                <button class="step" id="timeMinus" aria-label="Decrease time">
+                  <svg width="9" height="2" viewBox="0 0 9 2"><path d="M9 0v1.6H0V0z" fill="currentColor"/></svg>
+                </button>
+                <button class="step" id="timePlus" aria-label="Increase time">
+                  <svg width="9" height="9" viewBox="0 0 9 9"><path d="M3.6 0h1.8v3.6H9v1.8H5.4V9H3.6V5.4H0V3.6h3.6z" fill="currentColor"/></svg>
+                </button>
+              </span>
+            </div>
+          </div>
+
+          <div class="inbox">
+            <span class="cap">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 8.5h5M9.5 12h5M9.5 15.5h5"/></svg>
+              $ Investment
+            </span>
+            <div class="row">
+              <span class="l">
+                <span class="svg-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 8.5h5M9.5 12h5M9.5 15.5h5"/></svg></span>
+                <span class="val" id="amtVal">$ 1</span>
+              </span>
+              <span class="step-row">
+                <button class="step" id="amtMinus" aria-label="Decrease amount">
+                  <svg width="9" height="2" viewBox="0 0 9 2"><path d="M9 0v1.6H0V0z" fill="currentColor"/></svg>
+                </button>
+                <button class="step" id="amtPlus" aria-label="Increase amount">
+                  <svg width="9" height="9" viewBox="0 0 9 9"><path d="M3.6 0h1.8v3.6H9v1.8H5.4V9H3.6V5.4H0V3.6h3.6z" fill="currentColor"/></svg>
+                </button>
+              </span>
+            </div>
+          </div>
+
+          <div class="payout-row">
+            <span class="l">
+              <span class="t">Payout</span>
+              <span class="v" id="payoutVal">$1.82</span>
+            </span>
+            <span class="big" id="payoutPct">82%</span>
+          </div>
+
+          <div class="actions">
+            <button class="btn-trade btn-up" id="buyBtn">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              UP
+            </button>
+            <button class="btn-trade btn-down" id="sellBtn">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+              DOWN
+            </button>
+          </div>
+
+          <p class="msg" id="msg"></p>
+          <p class="live-line" id="liveLine">Connecting to market…</p>
+        </div>
+
+        <!-- recent trades -->
+        <div class="trades-card">
+          <div class="trades-head">
+            <span class="t">Recent Trades</span>
+            <a class="view-all" href="#" id="viewAll">View All</a>
+          </div>
+          <div class="trades-list" id="tradesList"></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- ==================== MOBILE NAV ==================== -->
+  <nav class="mnav glass" id="mnav"></nav>
+</div>
+
+<!-- ============================================================
+  APPLICATION LOGIC
+============================================================ -->
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- assets / helpers ---------- */
+  var ASSETS = [
+    { symbol: "BTCUSDT", label: "BTC/USDT", coin: "B", payout: 82 },
+    { symbol: "ETHUSDT", label: "ETH/USDT", coin: "E", payout: 80 },
+    { symbol: "BNBUSDT", label: "BNB/USDT", coin: "B", payout: 78 },
+    { symbol: "SOLUSDT", label: "SOL/USDT", coin: "S", payout: 77 },
+    { symbol: "XRPUSDT", label: "XRP/USDT", coin: "X", payout: 75 },
+    { symbol: "DOGEUSDT", label: "DOGE/USDT", coin: "D", payout: 74 },
+    { symbol: "ADAUSDT", label: "ADA/USDT", coin: "A", payout: 73 },
+    { symbol: "LTCUSDT", label: "LTC/USDT", coin: "L", payout: 72 }
+  ];
+  var INTERVALS = ["1m", "5m", "15m", "1h", "1d"];
+  var STEP = { "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "1d": 86400 };
+  var TF = [
+    { label: "1m", value: "1m" },
+    { label: "5m", value: "5m" },
+    { label: "15m", value: "15m" },
+    { label: "1H", value: "1h" },
+    { label: "1D", value: "1d" }
+  ];
+  var REST = ["https://api.binance.com", "https://data-api.binance.vision"];
+  var WSH = ["wss://stream.binance.com:9443", "wss://data-stream.binance.vision:9443"];
+  var SVG_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">';
+
+  function pad(n){ return String(n).padStart(2, "0"); }
+  function assetOf(s){ for (var i=0;i<ASSETS.length;i++) if (ASSETS[i].symbol===s) return ASSETS[i]; return ASSETS[0]; }
+  function fmtPrice(n){
+    var d = n < 1 ? 5 : n < 100 ? 3 : 2;
+    return n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+  function fmtDur(s){
+    return [Math.floor(s/3600), Math.floor((s%3600)/60), s%60].map(pad).join(":");
+  }
+  function coinColor(base){
+    var m = { BTC:"#f7931a", ETH:"#627eea", BNB:"#f3ba2f", XRP:"#20273f", SOL:"#9945ff", ADA:"#0033ad", DOGE:"#c2a633", USDT:"#26a17b", EUR:"#2064f0" };
+    return m[base] || "#3b82f6";
+  }
+  function el(tag, cls, html){ var e=document.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; return e; }
+  function updateLive(){
+    var s = liveStatus;
+    var box = document.getElementById("live");
+    box.className = "live " + s;
+    document.getElementById("liveTxt").textContent = s === "live" ? "Live" : s === "offline" ? "Offline" : "Loading";
+  }
+
+  /* ---------- state ---------- */
+  var symbol = "BTCUSDT";
+  var interval = "1m";
+  var tabs = ["BTCUSDT", "ETHUSDT"];
+  var seconds = 60;
+  var amount = 1;
+  var price = null;
+  var pending = true;
+  var sbOpen = true;
+  var liveStatus = "conn";
+  var chart = null, series = null, lastBar = null, priceLine = null;
+  var ws = null, wsHost = 0, wsGuard = null, wsClosed = false;
+
+  /* ---------- chart ---------- */
+  function initChart(){
+    if (!window.LightweightCharts) { document.getElementById("liveTxt").textContent = "Chart lib missing"; return; }
+    var wrap = document.getElementById("chart");
+    chart = LightweightCharts.createChart(wrap, {
+      layout: { background: { type: LightweightCharts.ColorType.Solid, color: "#0d1117" }, textColor: "#8395a8", fontSize: 11 },
+      grid: { vertLines: { color: "#161b22" }, horzLines: { color: "#161b22" } },
+      rightPriceScale: { borderColor: "#26324a", scaleMargins: { top: 0.12, bottom: 0.1 } },
+      timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#26324a", rightOffset: 8, barSpacing: 9 },
+      crosshair: { vertLine: { color: "#2b99ff", labelBackgroundColor: "#2b99ff" }, horzLine: { color: "#2b99ff", labelBackgroundColor: "#2b99ff" } },
+      autoSize: true
+    });
+    series = chart.addCandlestickSeries({
+      upColor: "#10b981", downColor: "#ff5470",
+      borderUpColor: "#10b981", borderDownColor: "#ff5470",
+      wickUpColor: "#10b981", wickDownColor: "#ff5470",
+      priceLineVisible: false, lastValueVisible: false
+    });
+    resizeChart();
+  }
+  function resizeChart(){ if (chart) chart.applyOptions({ width: document.getElementById("chart").clientWidth, height: document.getElementById("chart").clientHeight }); }
+
+  function syntheticCandles(n){
+    var out = []; var t = Math.floor(Date.now()/1000); t -= t % 60; var p = 100;
+    for (var i=0;i<n;i++){
+      var o = p, c = p * (1 + (Math.random()-0.49)*0.004);
+      out.push({ time: t - (n-i)*60, open: o, high: Math.max(o,c)*1.001, low: Math.min(o,c)*0.999, close: c });
+      p = c;
+    }
+    return out;
+  }
+
+  function loadKlines(){
+    liveStatus = "conn"; updateLive();
+    fetchKlines(symbol, interval).then(function(data){
+      if (!series) return;
+      series.setData(data);
+      lastBar = data[data.length-1] || null;
+      if (lastBar) setPrice(lastBar.close);
+      chart.timeScale().fitContent();
+      liveStatus = "live"; updateLive();
+    }).catch(function(){
+      if (!series) return;
+      var data = syntheticCandles(200);
+      series.setData(data);
+      lastBar = data[data.length-1];
+      setPrice(lastBar.close);
+      chart.timeScale().fitContent();
+      liveStatus = "offline"; updateLive();
+    });
+  }
+
+  function fetchKlines(sym, iv, limit){
+    limit = limit || 500;
+    return new Promise(function(resolve, reject){
+      (function tryHost(i){
+        if (i >= REST.length) return reject(new Error("Binance unreachable"));
+        fetch(REST[i] + "/api/v3/klines?symbol=" + sym + "&interval=" + iv + "&limit=" + limit)
+          .then(function(r){ if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+          .then(function(rows){
+            resolve(rows.map(function(row){
+              return {
+                time: Math.floor(Number(row[0]) / 1000),
+                open: Number(row[1]), high: Number(row[2]),
+                low: Number(row[3]), close: Number(row[4])
+              };
+            }));
+          })
+          .catch(function(){ tryHost(i+1); });
+      })(0);
+    });
+  }
+
+  function setPrice(p){ price = p; document.getElementById("price").textContent = fmtPrice(p); }
+
+  function connectWS(){
+    if (wsClosed) return;
+    var streams = symbol.toLowerCase() + "@aggTrade/" + symbol.toLowerCase() + "@kline_" + interval;
+    var sock;
+    try { sock = new WebSocket(WSH[wsHost] + "/stream?streams=" + streams); }
+    catch (e) { setTimeout(connectWS, 2000); return; }
+    ws = sock;
+    wsGuard = setTimeout(function(){
+      if (sock === ws && sock.readyState !== WebSocket.OPEN){
+        wsHost = (wsHost + 1) % WSH.length;
+        try { sock.close(); } catch(e){}
+      }
+    }, 6000);
+    sock.onopen = function(){ if (wsGuard) clearTimeout(wsGuard); if (!wsClosed){ liveStatus="live"; updateLive(); } };
+    sock.onmessage = function(ev){
+      try {
+        var m = JSON.parse(String(ev.data));
+        if (m.stream && m.stream.indexOf("aggTrade") !== -1){
+          applyTradePrice(Number(m.data.p), Number(m.data.T)/1000);
+        } else if (m.stream && m.stream.indexOf("@kline_") !== -1){
+          var k = m.data.k;
+          var bar = {
+            time: Math.floor(Number(k.t)/1000),
+            open: Number(k.o), high: Number(k.h), low: Number(k.l), close: Number(k.c)
+          };
+          lastBar = bar;
+          series.update(bar);
+          setPrice(bar.close);
+        }
+      } catch(e){}
+    };
+    sock.onerror = function(){ if (sock === ws){ liveStatus="offline"; updateLive(); } };
+    sock.onclose = function(){
+      if (wsGuard) clearTimeout(wsGuard);
+      if (wsClosed) return;
+      liveStatus = "offline"; updateLive();
+      setTimeout(connectWS, 2500);
+    };
+  }
+
+  function applyTradePrice(p, tsSec){
+    setPrice(p);
+    if (!lastBar) return;
+    var step = STEP[interval];
+    var bucket = Math.floor(tsSec / step) * step;
+    var next;
+    if (bucket > lastBar.time){
+      next = { time: bucket, open: p, high: p, low: p, close: p };
+    } else {
+      next = {
+        time: lastBar.time,
+        open: lastBar.open,
+        high: Math.max(lastBar.high, p),
+        low: Math.min(lastBar.low, p),
+        close: p
+      };
+    }
+    lastBar = next;
+    series.update(next);
+    if (priceLine) priceLine.applyOptions({ price: p });
+    else priceLine = series.createPriceLine({ price: p, color: "#2b99ff", lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "" });
+  }
+
+  function closeWS(){
+    wsClosed = true;
+    if (wsGuard) clearTimeout(wsGuard);
+    if (ws) { try { ws.close(); } catch(e){} ws = null; }
+  }
+
+  function switchSymbol(s){
+    if (s === symbol) return;
+    symbol = s;
+    var a = assetOf(s);
+    document.getElementById("coinIco").textContent = a.coin;
+    document.getElementById("coinIco").style.background = coinColor(a.label.split("/")[0]);
+    document.getElementById("assetLabel").textContent = a.label;
+    document.getElementById("assetPct").textContent = a.payout + "%";
+    document.getElementById("assetPay").innerHTML = "<span>" + a.payout + "%</span><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 9l6 6 6-6\"/></svg>";
+    document.getElementById("payoutPct").textContent = a.payout + "%";
+    refreshPanel();
+    renderTabs();
+    closeWS(); wsClosed = false; connectWS();
+    loadKlines();
+  }
+
+  function changeInterval(iv){
+    if (iv === interval) return;
+    interval = iv;
+    renderTF();
+    closeWS(); wsClosed = false; connectWS();
+    loadKlines();
+  }
+
+  function zoom(dir){
+    if (!chart) return;
+    var ts = chart.timeScale();
+    var cur = (ts.options().barSpacing != null) ? ts.options().barSpacing : 9;
+    var next = Math.max(3, Math.min(40, cur + (dir === "in" ? 2 : -2)));
+    ts.applyOptions({ barSpacing: next });
+  }
+
+  /* ---------- tabs ---------- */
+  function renderTabs(){
+    var wrap = document.getElementById("tabs");
+    wrap.innerHTML = "";
+    tabs.forEach(function(sym){
+      var a = assetOf(sym); var on = sym === symbol;
+      var parts = a.label.split("/");
+      var tab = el("div", "tab " + (on ? "on" : "off"));
+      if (on && tabs.length > 1){
+        var x = el("button", "x", '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>');
+        x.addEventListener("click", function(){ closeTab(sym); });
+        tab.appendChild(x);
+      }
+      var main = el("button", "tab-main");
+      main.innerHTML =
+        '<span class="flags"><span class="f-base">' + (parts[0] || "B")[0] + '</span><span class="f-quote">' + (parts[1] || "T")[0] + '</span></span>' +
+        '<span class="nm">' + a.label + (on ? '<span class="otc">(OTC)</span>' : "") + '</span>' +
+        '<span class="pay">' + a.payout + '%</span>';
+      main.addEventListener("click", function(){ switchSymbol(sym); });
+      tab.appendChild(main);
+      wrap.appendChild(tab);
+    });
+
+    var ddWrap = el("span", "dd-wrap");
+    var addBtn = el("button", "add-btn", "+");
+    var dd = el("div", "dd add-dd", "");
+    dd.style.display = "none";
+    ASSETS.filter(function(a){ return tabs.indexOf(a.symbol) === -1; }).forEach(function(a){
+      var it = el("button", "add-it",
+        '<span class="l"><span class="coin">' + a.coin + '</span><span>' + a.label + '</span></span>' +
+        '<span class="pay">' + a.payout + '%</span>');
+      it.addEventListener("click", function(){ addTab(a.symbol); });
+      dd.appendChild(it);
+    });
+    addBtn.addEventListener("click", function(ev){ ev.stopPropagation(); dd.style.display = dd.style.display === "none" ? "" : "none"; });
+    document.addEventListener("click", function(ev){ if (!ddWrap.contains(ev.target)) dd.style.display = "none"; });
+    ddWrap.appendChild(addBtn); ddWrap.appendChild(dd);
+    wrap.appendChild(ddWrap);
+  }
+
+  function addTab(sym){
+    if (tabs.indexOf(sym) === -1) tabs.push(sym);
+    switchSymbol(sym);
+    renderTabs();
+  }
+  function closeTab(sym){
+    if (tabs.length <= 1) return;
+    tabs = tabs.filter(function(s){ return s !== sym; });
+    if (sym === symbol) switchSymbol(tabs[0]);
+    renderTabs();
+  }
+
+  /* ---------- timeframe / ratio / clock ---------- */
+  function renderTF(){
+    var bar = document.getElementById("tfbar");
+    bar.innerHTML = "";
+    TF.forEach(function(tf){
+      var b = el("button", "tf" + (tf.value === interval ? " on" : ""), tf.label);
+      b.addEventListener("click", function(){ changeInterval(tf.value); });
+      bar.appendChild(b);
+    });
+  }
+
+  function updateRatio(){
+    fetchKlines(symbol, "1m", 60).then(function(data){
+      if (!data.length) return;
+      var up = data.filter(function(c){ return c.close >= c.open; }).length;
+      var buy = Math.round(up / data.length * 100);
+      document.getElementById("ratioBuy").textContent = buy + "%";
+      document.getElementById("ratioSell").textContent = (100 - buy) + "%";
+      document.getElementById("ratioUp").style.height = buy + "%";
+      document.getElementById("ratioDown").style.height = (100 - buy) + "%";
+      document.getElementById("ratioHandle").style.top = "calc(" + buy + "% - 6px)";
+    }).catch(function(){});
+  }
+
+  function updateClock(){
+    var d = new Date();
+    document.getElementById("clock").textContent = pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()) + ":" + pad(d.getUTCSeconds());
+  }
+  setInterval(updateClock, 1000); updateClock();
+
+  /* ---------- panel ---------- */
+  function refreshPanel(){
+    var a = assetOf(symbol);
+    document.getElementById("timeVal").textContent = fmtDur(seconds);
+    document.getElementById("amtVal").textContent = "$ " + amount;
+    var payout = +(amount * (1 + a.payout / 100)).toFixed(2);
+    document.getElementById("payoutVal").textContent = "$" + payout.toFixed(2);
+    document.getElementById("payoutPct").textContent = a.payout + "%";
+    document.getElementById("liveLine").textContent = price != null ? "Live · " + a.label : "Connecting to market…";
+  }
+
+  /* ---------- trades (sample + dynamic) ---------- */
+  var trades = [];
+  var SAMPLES = [
+    { icon: "coin", color: "#f7931a", base: "BTC", label: "BTC/USD", dir: "up",   time: "00:01:00", amt: "$10.00", spent: "$10.00", res: "+ $8.20" },
+    { icon: "coin", color: "#627eea", base: "ETH", label: "ETH/USD", dir: "down", time: "00:01:00", amt: "$10.00", spent: "$10.00", res: "+ $8.10" },
+    { icon: "flag", base: "EUR",      label: "EUR/USD", dir: "up",   time: "00:01:00", amt: "$10.00", spent: "$10.01", res: "+ $7.50" }
+  ];
+
+  function renderTrades(){
+    var list = document.getElementById("tradesList");
+    list.innerHTML = "";
+    var rows = trades.length ? trades.map(function(t){
+      var base = (t.label.split("/")[0] || "BTC");
+      var win = +(t.amount * (1 + assetOf(symbol).payout / 100)).toFixed(2);
+      return {
+        icon: "coin", color: coinColor(base), base: base,
+        label: t.label, dir: t.side === "buy" ? "up" : "down",
+        time: t.time || "00:01:00",
+        amt: "$" + t.amount.toFixed(2), spent: "$" + t.amount.toFixed(2), res: "+ $" + win.toFixed(2)
+      };
+    }) : SAMPLES;
+    rows.forEach(function(r){ list.appendChild(tradeRow(r)); });
+    if (pending) list.appendChild(el("p", "pend-note", "Pending trade enabled"));
+  }
+
+  function tradeRow(r){
+    var row = el("div", "trow");
+    var icon;
+    if (r.icon === "flag"){
+      icon = el("span", "flag-mini",
+        '<svg viewBox="0 0 24 24" width="34" height="34"><rect width="24" height="24" fill="#f2f2f2"/><rect width="24" height="1.85" y="0" fill="#b22234"/><rect width="24" height="1.85" y="3.7" fill="#b22234"/><rect width="24" height="1.85" y="7.4" fill="#b22234"/><rect width="24" height="1.85" y="11.1" fill="#b22234"/><rect width="24" height="1.85" y="14.8" fill="#b22234"/><rect width="24" height="1.85" y="18.5" fill="#b22234"/><rect width="24" height="1.85" y="22.2" fill="#b22234"/><rect width="10" height="13" fill="#3c3b6e"/></svg>');
+    } else {
+      icon = el("span", "coin-xs", (r.base || "B")[0]);
+      icon.style.background = r.color;
+    }
+    var up = r.dir === "up";
+    var arr = up ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M5 12l7 7 7-7"/>';
+    row.innerHTML = "";
+    var c1 = el("div", "c1");
+    c1.appendChild(icon);
+    var col1 = el("div", "col");
+    var symLine = el("span", "sym", r.label + '<svg class="arr" viewBox="0 0 24 24" fill="none" stroke="' + (up ? "#34d399" : "#fb7185") + '" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">' + arr + "</svg>");
+    var tm = el("span", "tm", r.time);
+    col1.appendChild(symLine); col1.appendChild(tm);
+    c1.appendChild(col1);
+    row.appendChild(c1);
+    row.appendChild(el("span", "amt", r.amt));
+    var c3 = el("div", "c3");
+    var col3 = el("div", "col");
+    col3.appendChild(el("span", "spend", r.spent));
+    col3.appendChild(el("span", "res", r.res));
+    c3.appendChild(col3);
+    row.appendChild(c3);
+    return row;
+  }
+
+  /* ---------- actions ---------- */
+  function showMsg(ok, text){
+    var m = document.getElementById("msg");
+    m.textContent = text;
+    m.className = "msg " + (ok ? "ok" : "err");
+    setTimeout(function(){ m.textContent = ""; }, 4000);
+  }
+
+  function onTrade(side){
+    var a = assetOf(symbol);
+    if (!price){ showMsg(false, "Waiting for market price…"); return; }
+    var d = new Date();
+    trades.unshift({
+      id: Date.now(),
+      label: a.label,
+      side: side,
+      amount: amount,
+      time: pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()) + ":" + pad(d.getUTCSeconds())
+    });
+    trades = trades.slice(0, 20);
+    renderTrades();
+    showMsg(true, (side === "buy" ? "Buy" : "Sell") + " placed · $" + amount + " · " + seconds + "s");
+    var panel = document.getElementById("panel");
+    if (panel.scrollTop > 20) panel.scrollTop = 0;
+  }
+
+  /* ---------- sidebar ---------- */
+  var NAV = [
+    { label: "TRADE", active: true, d: "M4 4h16v16H4zM7 15l3-4 3 2 4-6" },
+    { label: "ANALYTICS", d: "M4 20V4M4 20h16M8 20v-6M12 20v-9M16 20v-4M20 20v-11" },
+    { label: "PORTFOLIO", d: "M3 3h3M18 3h3M3 21h3M18 21h3M3 6h3M18 6h3M3 15h3M18 15h3M12 4v4l2.5 1.5M12 20v-4l-2.5-1.5" },
+    { label: "AGENT ACCOUNT", d: "M5 10h14l1 10H4L5 10zM9 10V8a3 3 0 0 1 6 0v2M12 14v3M9.5 14h.01M14.5 14h.01" },
+    { label: "SETTINGS", d: "M6 9l6 6 6-6" }
+  ];
+  function renderNav(){
+    var nav = document.getElementById("sNav");
+    nav.innerHTML = "";
+    NAV.forEach(function(item){
+      var b = el("button", "s-item" + (item.active ? " active" : ""));
+      b.innerHTML = '<span class="ico" style="display:grid;place-items:center;position:relative;z-index:1">' + SVG_ICON + '<path d="' + item.d + '"/></svg></span>' +
+                    '<span class="lbl">' + item.label + "</span>";
+      b.addEventListener("click", function(){
+        NAV.forEach(function(n){ n.active = false; });
+        item.active = true;
+        renderNav();
+      });
+      nav.appendChild(b);
+    });
+  }
+
+  function setSidebar(open){
+    sbOpen = open;
+    document.getElementById("sidebar").classList.toggle("open", open);
+    document.getElementById("shell").classList.toggle("collapsed", !open);
+    var ham = document.getElementById("ham");
+    if (open){ ham.style.display = "none"; }
+    else { ham.style.display = ""; }
+  }
+
+  /* ---------- mobile nav ---------- */
+  function renderMNav(){
+    var nav = document.getElementById("mnav");
+    var items = [
+      { label: "Trade", on: true, d: "M3 17l5-6 4 4 8-9M15 6h5v5" },
+      { label: "Help", d: "M9.5 9a2.5 2.5 0 1 1 3.4 2.3c-.8.3-1 .8-1 1.7M12 17h.01" },
+      { label: "Account", d: "M12 8a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1.5-3.2 4.3-5 8-5s6.5 1.8 8 5" },
+      { label: "Agent", d: "M5 10h14l1 10H4L5 10zM9 10V8a3 3 0 0 1 6 0v2M12 14v3M9.5 14h.01M14.5 14h.01" },
+      { label: "More", d: "M12 5h.01M12 12h.01M12 19h.01" }
+    ];
+    items.forEach(function(item, idx){
+      var a = el("a", item.on ? "on" : "");
+      a.href = "#";
+      var badge = idx === 4 ? '<span class="badge">4</span>' : "";
+      a.innerHTML = '<span class="ic">' + SVG_ICON + '<path d="' + item.d + '"/></svg>' + (item.on ? '<span class="dot"></span>' : "") + badge + "</span>" + item.label;
+      a.addEventListener("click", function(ev){
+        ev.preventDefault();
+        items.forEach(function(n){ n.on = false; });
+        item.on = true;
+        renderMNav();
+      });
+      nav.appendChild(a);
+    });
+  }
+
+  /* ---------- header dropdowns / misc ---------- */
+  function bindHeader(){
+    var accBtn = document.getElementById("accBtn"), accDd = document.getElementById("accDd");
+    var bellBtn = document.getElementById("bellBtn"), bellDd = document.getElementById("bellDd");
+    function bindPair(btn, box){
+      btn.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        var opened = box.style.display !== "none";
+        box.style.display = "none";
+        if (!opened) box.style.display = "";
+      });
+    }
+    bindPair(accBtn, accDd);
+    bindPair(bellBtn, bellDd);
+    document.addEventListener("click", function(){ accDd.style.display = "none"; bellDd.style.display = "none"; });
+
+    document.querySelectorAll(".m-item[data-link]").forEach(function(b){
+      b.addEventListener("click", function(){ accDd.style.display = "none"; });
+    });
+
+    var ham = document.getElementById("ham");
+    ham.addEventListener("click", function(){ setSidebar(!sbOpen); });
+    document.getElementById("sbToggle").addEventListener("click", function(){ setSidebar(!sbOpen); });
+
+    document.getElementById("viewAll").addEventListener("click", function(ev){ ev.preventDefault(); });
+    document.querySelectorAll("a.logo, a.btn-deposit").forEach(function(a){
+      a.addEventListener("click", function(ev){ ev.preventDefault(); });
+    });
+
+    var toolFS = document.getElementById("toolFS");
+    toolFS.addEventListener("click", function(){
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen().catch(function(){});
+    });
+    document.addEventListener("fullscreenchange", function(){
+      document.getElementById("fsIco").innerHTML = document.fullscreenElement
+        ? '<path d="M10 4H5a1 1 0 0 0-1 1v5M14 4h5a1 1 0 0 1 1 1v5M10 20H5a1 1 0 0 1-1-1v-5M14 20h5a1 1 0 0 0 1-1v-5"/>'
+        : '<path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/>';
+    });
+
+    document.getElementById("toolBack").addEventListener("click", function(){
+      if (window.history.length > 1) window.history.back();
+      else flashButton(this);
+    });
+    var toolMute = document.getElementById("toolMute"), muted = false;
+    toolMute.addEventListener("click", function(){
+      muted = !muted;
+      document.getElementById("muteL").outerHTML = muted
+        ? '<path d="M16 9.5l5 5M21 9.5l-5 5"/>'
+        : '<path id="muteL" d="M15.5 8.5a4.2 4.2 0 0 1 0 7M18.5 6.5a8 8 0 0 1 0 11"/>';
+      if (muted){ toolMute.style.borderColor = "rgba(251,113,133,0.4)"; toolMute.style.color = "#fb7185"; }
+      else { toolMute.style.borderColor = ""; toolMute.style.color = ""; }
+    });
+    document.getElementById("toolSet").addEventListener("click", function(){ flashButton(this); });
+    document.getElementById("joinBtn").addEventListener("click", function(){ flashButton(this); });
+    document.getElementById("helpBtn").addEventListener("click", function(){ flashButton(this); });
+
+    document.getElementById("buyBtn").addEventListener("click", function(){ onTrade("buy"); });
+    document.getElementById("sellBtn").addEventListener("click", function(){ onTrade("sell"); });
+
+    document.getElementById("timeMinus").addEventListener("click", function(){ seconds = Math.max(5, seconds - 5); refreshPanel(); });
+    document.getElementById("timePlus").addEventListener("click", function(){ seconds = Math.min(14400, seconds + 5); refreshPanel(); });
+    document.getElementById("amtMinus").addEventListener("click", function(){ amount = Math.max(1, amount - 1); refreshPanel(); });
+    document.getElementById("amtPlus").addEventListener("click", function(){ amount += 1; refreshPanel(); });
+
+    document.getElementById("zoomIn").addEventListener("click", function(){ zoom("in"); });
+    document.getElementById("zoomOut").addEventListener("click", function(){ zoom("out"); });
+  }
+
+  function flashButton(btn){
+    btn.classList.add("flash");
+    setTimeout(function(){ btn.classList.remove("flash"); }, 600);
+  }
+
+  /* ---------- boot ---------- */
+  function boot(){
+    renderNav();
+    renderMNav();
+    renderTF();
+    renderTabs();
+    renderTrades();
+    refreshPanel();
+    bindHeader();
+    initChart();
+    loadKlines();
+    connectWS();
+    updateRatio();
+    setInterval(updateRatio, 30000);
+    window.addEventListener("resize", resizeChart);
+    setSidebar(window.innerWidth >= 1024);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+</body>
+</html>
