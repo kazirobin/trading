@@ -17,20 +17,16 @@ const TF: { label: string; value: Interval }[] = [
 function pad(n: number) {
   return String(n).padStart(2, '0');
 }
-function fmtPrice(n: number) {
-  const d = n < 1 ? 5 : n < 100 ? 3 : 2;
-  return n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
-}
 function clockUTC(d = new Date()) {
   return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 }
 function Flags({ base, quote, size = 'h-5 w-5' }: { base: string; quote: string; size?: string }) {
   return (
     <span className={`flex ${size === 'h-5 w-5' ? '-space-x-1.5' : '-space-x-2'}`}>
-      <span className={`grid ${size} place-items-center rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 text-[9px] font-bold text-white ring-2 ring-neo-bg`}>
+      <span className={`grid ${size} place-items-center rounded-full bg-blue-500 text-[9px] font-bold text-white ring-2 ring-neo-bg`}>
         {base[0]}
       </span>
-      <span className={`grid ${size} place-items-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-[9px] font-bold text-white ring-2 ring-neo-bg`}>
+      <span className={`grid ${size} place-items-center rounded-full bg-amber-500 text-[9px] font-bold text-white ring-2 ring-neo-bg`}>
         {quote[0]}
       </span>
     </span>
@@ -40,18 +36,22 @@ function Flags({ base, quote, size = 'h-5 w-5' }: { base: string; quote: string;
 export function TerminalChart({
   symbol,
   onSymbolChange,
+  collapsed,
+  onToggleCollapse,
 }: {
   symbol: string;
   onSymbolChange: (symbol: string) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const lastRef = useRef<CandlestickData | null>(null);
   const lineRef = useRef<IPriceLine | null>(null);
+  const themeCleanupRef = useRef<(() => void) | null>(null);
 
   const [interval, setInterval] = useState<Interval>('1m');
-  const [price, setPrice] = useState<number | null>(null);
   const [status, setStatus] = useState<'loading' | 'live' | 'offline'>('loading');
   const [now, setNow] = useState(() => new Date());
   const [addOpen, setAddOpen] = useState(false);
@@ -71,11 +71,16 @@ export function TerminalChart({
     (async () => {
       const { createChart, ColorType } = await import('lightweight-charts');
       if (disposed || !wrapRef.current) return;
+      const isLight = document.documentElement.classList.contains('light');
       const chart = createChart(wrapRef.current, {
-        layout: { background: { type: ColorType.Solid, color: '#0d1117' }, textColor: '#8395a8', fontSize: 11 },
-        grid: { vertLines: { color: '#161b22' }, horzLines: { color: '#161b22' } },
-        rightPriceScale: { borderColor: '#26324a', scaleMargins: { top: 0.12, bottom: 0.1 } },
-        timeScale: { timeVisible: true, secondsVisible: false, borderColor: '#26324a', rightOffset: 8, barSpacing: 9 },
+        layout: {
+          background: { type: ColorType.Solid, color: isLight ? '#f7f9fc' : '#0d1117' },
+          textColor: isLight ? '#5b6b82' : '#8395a8',
+          fontSize: 11,
+        },
+        grid: { vertLines: { color: isLight ? '#e4e9f1' : '#161b22' }, horzLines: { color: isLight ? '#e4e9f1' : '#161b22' } },
+        rightPriceScale: { borderColor: isLight ? '#c8d1de' : '#26324a', scaleMargins: { top: 0.12, bottom: 0.1 } },
+        timeScale: { timeVisible: true, secondsVisible: false, borderColor: isLight ? '#c8d1de' : '#26324a', rightOffset: 8, barSpacing: 9 },
         crosshair: {
           vertLine: { color: '#2b99ff', labelBackgroundColor: '#2b99ff' },
           horzLine: { color: '#2b99ff', labelBackgroundColor: '#2b99ff' },
@@ -94,10 +99,27 @@ export function TerminalChart({
       });
       chartRef.current = chart;
       seriesRef.current = series;
-      return () => chart.remove();
+
+      const onTheme = () => {
+        if (!chartRef.current) return;
+        const light = document.documentElement.classList.contains('light');
+        chartRef.current.applyOptions({
+          layout: {
+            background: { type: ColorType.Solid, color: light ? '#f7f9fc' : '#0d1117' },
+            textColor: light ? '#5b6b82' : '#8395a8',
+          },
+          grid: { vertLines: { color: light ? '#e4e9f1' : '#161b22' }, horzLines: { color: light ? '#e4e9f1' : '#161b22' } },
+          rightPriceScale: { borderColor: light ? '#c8d1de' : '#26324a' },
+          timeScale: { borderColor: light ? '#c8d1de' : '#26324a' },
+        });
+      };
+      window.addEventListener('trade-theme-change', onTheme);
+      themeCleanupRef.current = () => window.removeEventListener('trade-theme-change', onTheme);
     })();
     return () => {
       disposed = true;
+      themeCleanupRef.current?.();
+      themeCleanupRef.current = null;
       chartRef.current?.remove();
       chartRef.current = null;
       seriesRef.current = null;
@@ -113,7 +135,6 @@ export function TerminalChart({
         if (cancelled || !seriesRef.current) return;
         seriesRef.current.setData(data as CandlestickData[]);
         lastRef.current = (data[data.length - 1] as CandlestickData) ?? null;
-        if (lastRef.current) setPrice(lastRef.current.close);
         chartRef.current?.timeScale().fitContent();
         setStatus('live');
       })
@@ -134,7 +155,6 @@ export function TerminalChart({
     const streams = [`${symbol.toLowerCase()}@aggTrade`, `${symbol.toLowerCase()}@kline_${interval}`].join('/');
 
     const applyPrice = (p: number, tsSec: number) => {
-      setPrice(p);
       const last = lastRef.current;
       if (!last) return;
       const bucket = Math.floor(tsSec / step) * step;
@@ -192,7 +212,6 @@ export function TerminalChart({
             };
             lastRef.current = c;
             seriesRef.current?.update(c);
-            setPrice(c.close);
           }
         } catch {
           /* noop */
@@ -243,20 +262,17 @@ export function TerminalChart({
     setAddOpen(false);
   };
 
-  const a = assetOf(symbol);
-  const base = a.label.split('/')[0] ?? 'B';
-  const quote = a.label.split('/')[1] ?? 'T';
-
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-neo-bg">
       <div ref={wrapRef} className="absolute inset-0 z-0" />
+      <div className={collapsed ? 'hidden' : 'contents'}>
 
       {/* DEMO watermark */}
-      <span className="pointer-events-none absolute left-1/2 top-1/2 z-[5] -translate-x-1/2 -translate-y-1/2 rotate-[-14deg] text-[7rem] font-black uppercase tracking-widest text-white/[0.03] select-none lg:text-[10rem]">
+      <span className="pointer-events-none absolute left-1/2 top-1/2 z-[5] -translate-x-1/2 -translate-y-1/2 rotate-[-14deg] text-[7rem] font-black uppercase tracking-widest text-neo-text/[0.04] select-none lg:text-[10rem]">
         Demo
       </span>
 
-      {/* frosted asset switcher */}
+      {/* flat asset switcher */}
       <div className="pointer-events-none absolute left-2 top-2 z-20 flex flex-wrap items-start gap-1.5">
         {tabs.map((sym) => {
           const ta = assetOf(sym);
@@ -265,10 +281,10 @@ export function TerminalChart({
           return (
             <div
               key={sym}
-              className={`group pointer-events-auto flex items-center gap-2 rounded-xl px-2 py-1.5 text-[12px] backdrop-blur-xl transition-all duration-200 ${
+              className={`group pointer-events-auto flex items-center gap-2 rounded-lg px-2 py-1 text-[12px] ${
                 on
-                  ? 'glass-strong border-blue-400/30 text-neo-text shadow-[0_0_20px_-6px_rgba(43,153,255,0.6)]'
-                  : 'border-transparent bg-white/[0.03] text-neo-mut hover:bg-white/[0.07] hover:text-neo-text'
+                  ? 'border border-neo-line bg-neo-panel text-neo-text'
+                  : 'text-neo-mut hover:bg-neo-hover hover:text-neo-text'
               }`}
             >
               <button onClick={() => onSymbolChange(sym)} className="flex items-center gap-1.5">
@@ -277,10 +293,10 @@ export function TerminalChart({
                   {ta.label}
                   {on && <span className="ml-1 text-[9px] font-semibold uppercase text-neo-mut">(OTC)</span>}
                 </span>
-                <span className="font-bold text-amber-300">{ta.payout}%</span>
+                <span className="font-bold text-amber-500">{ta.payout}%</span>
               </button>
               {on && tabs.length > 1 && (
-                <button onClick={() => closeTab(sym)} className="text-neo-mut hover:text-rose-400" aria-label="Close">
+                <button onClick={() => closeTab(sym)} className="text-neo-mut hover:text-rose-500" aria-label="Close">
                   <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
                 </button>
               )}
@@ -291,24 +307,24 @@ export function TerminalChart({
         <div className="relative">
           <button
             onClick={() => setAddOpen((v) => !v)}
-            className="pointer-events-auto grid h-[30px] min-w-[26px] place-items-center rounded-xl border border-white/5 bg-white/[0.03] px-1 text-neo-mut backdrop-blur-xl transition-all hover:border-sky-400/40 hover:text-white"
+            className="pointer-events-auto grid h-[30px] min-w-[26px] place-items-center rounded-lg border border-neo-line bg-neo-hover px-1 text-neo-mut transition-colors hover:text-neo-text"
             aria-label="Add asset"
           >
             +
           </button>
           {addOpen && (
-            <div className="neo-pop pointer-events-auto absolute left-0 top-[calc(100%+6px)] z-30 w-64 overflow-hidden rounded-xl glass-strong p-1.5 shadow-2xl">
+            <div className="neo-pop pointer-events-auto absolute left-0 top-[calc(100%+6px)] z-30 w-64 overflow-hidden rounded-xl border border-neo-line bg-neo-panel p-1">
               {ASSETS.filter((x) => !tabs.includes(x.symbol)).map((x) => (
                 <button
                   key={x.symbol}
                   onClick={() => addTab(x.symbol)}
-                  className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-white/[0.06]"
+                  className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-neo-hover"
                 >
                   <span className="flex items-center gap-2">
-                    <span className="grid h-5 w-5 place-items-center rounded-full bg-gradient-to-br from-sky-400 to-blue-600 text-[9px] font-bold text-white">{x.coin}</span>
+                    <span className="grid h-5 w-5 place-items-center rounded-full bg-blue-500 text-[9px] font-bold text-white">{x.coin}</span>
                     <span className="font-semibold text-neo-text">{x.label}</span>
                   </span>
-                  <span className="font-bold text-amber-300">{x.payout}%</span>
+                  <span className="font-bold text-amber-500">{x.payout}%</span>
                 </button>
               ))}
             </div>
@@ -316,64 +332,43 @@ export function TerminalChart({
         </div>
       </div>
 
-      {/* UTC clock + pair info */}
-      <div className="pointer-events-none absolute left-2 top-[46px] z-20 flex flex-col items-start gap-1.5">
-        <span className="flex items-center gap-1.5 rounded-lg border border-white/5 bg-white/[0.04] px-2 py-0.5 text-[11px] font-semibold tabular-nums text-neo-text backdrop-blur-xl">
-          {clockUTC(now)} <span className="text-neo-mut">UTC</span>
-        </span>
-        <button className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.06em] text-white shadow-[0_6px_16px_-6px_rgba(43,153,255,0.8)] transition-all hover:brightness-110">
-          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2}>
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 11v5M12 8h.01" strokeLinecap="round" />
-          </svg>
-          Pair information
-        </button>
-      </div>
-
-      {/* active price pill */}
-      <div className="pointer-events-none absolute right-3 top-2 z-20">
-        <span className="inline-flex items-center rounded-full border border-sky-400/40 bg-neo-bg/70 px-3 py-0.5 text-[13px] font-bold tabular-nums text-sky-300 shadow-[0_0_20px_-6px_rgba(43,153,255,0.7)] backdrop-blur-xl">
-          {price != null ? fmtPrice(price) : '—'}
-        </span>
-      </div>
-
       {/* trade interval markers */}
-      <div className="pointer-events-none absolute inset-y-4 z-[5]">
-        <div className="absolute inset-y-6 left-[63%] border-l border-dashed border-cyan-300/25">
-          <span className="absolute left-0 top-1/4 -translate-x-1/2 whitespace-nowrap rounded border border-white/5 bg-neo-bg/70 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-white/50">
+      <div className="pointer-events-none absolute inset-x-0 inset-y-4 z-[5]">
+        <div className="absolute inset-y-6 left-[63%] border-l border-dashed border-cyan-300/20">
+          <span className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded bg-neo-panel/80 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-cyan-200/70">
             Beginning of trade
           </span>
         </div>
-        <div className="absolute inset-y-6 left-[84%] border-l border-dashed border-sky-400/40">
-          <span className="absolute left-0 top-1/4 -translate-x-1/2 whitespace-nowrap rounded border border-sky-400/30 bg-neo-bg/70 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-sky-400">
+        <div className="absolute inset-y-6 left-[84%] border-l border-dashed border-sky-400/30">
+          <span className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded bg-neo-panel/80 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-sky-300/80">
             End of trade
           </span>
         </div>
       </div>
 
       {/* left floating drawing toolbar */}
-      <div className="absolute left-3 top-1/2 z-20 flex -translate-y-1/2 flex-col items-center gap-1 rounded-2xl border border-white/5 bg-neo-bg/60 p-1 backdrop-blur-xl">
-        <button className="grid h-7 w-7 place-items-center rounded-xl text-neo-mut transition-colors hover:bg-white/[0.06] hover:text-sky-300" aria-label="Draw">
+      <div className="absolute left-3 top-[64%] z-20 flex -translate-y-1/2 flex-col items-center gap-1 rounded-xl border border-neo-line bg-neo-panel p-1">
+        <button className="grid h-7 w-7 place-items-center rounded-lg text-neo-mut transition-colors hover:bg-neo-hover hover:text-sky-500" aria-label="Draw">
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
         </button>
-        <button className="grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-b from-sky-400 to-blue-600 text-[10px] font-bold text-white shadow-[0_0_14px_-4px_rgba(43,153,255,0.8)]" aria-label="Chart type">
+        <button className="grid h-7 w-7 place-items-center rounded-lg bg-blue-600 text-[10px] font-bold text-white" aria-label="Chart type">
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><rect x="4" y="10" width="3" height="8" rx="0.5" /><rect x="10.5" y="6" width="3" height="10" rx="0.5" /><rect x="17" y="9" width="3" height="6" rx="0.5" /></svg>
         </button>
-        <button className="grid h-7 w-7 place-items-center rounded-xl text-neo-mut transition-colors hover:bg-white/[0.06] hover:text-sky-300" aria-label="Crosshair">
+        <button className="grid h-7 w-7 place-items-center rounded-lg text-neo-mut transition-colors hover:bg-neo-hover hover:text-sky-500" aria-label="Crosshair">
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M12 4v16M4 12h16M12 12h.01" /></svg>
         </button>
       </div>
 
       {/* timeframe toolbar (bottom left) */}
-      <div className="absolute bottom-3 left-3 z-20 flex items-center overflow-hidden rounded-xl border border-white/5 bg-neo-bg/70 backdrop-blur-xl">
+      <div className="absolute bottom-3 left-3 z-20 flex items-center overflow-hidden rounded-lg border border-neo-line bg-neo-panel">
         {TF.map((tf) => (
           <button
             key={tf.value}
             onClick={() => setInterval(tf.value)}
-            className={`px-2.5 py-1.5 text-[10px] font-bold transition-all ${
+            className={`px-2 py-1 text-[10px] font-bold transition-colors ${
               interval === tf.value
-                ? 'bg-gradient-to-b from-sky-400 to-blue-600 text-white'
-                : 'text-neo-mut hover:bg-white/[0.06] hover:text-white'
+                ? 'bg-blue-600 text-white'
+                : 'text-neo-mut hover:bg-neo-hover hover:text-neo-text'
             }`}
             aria-label={`${tf.label} timeframe`}
           >
@@ -383,19 +378,34 @@ export function TerminalChart({
       </div>
 
       {/* zoom (bottom center) */}
-      <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center overflow-hidden rounded-xl border border-white/5 bg-neo-bg/70 backdrop-blur-xl">
-        <button onClick={() => zoom('in')} className="grid h-8 w-9 place-items-center text-neo-mut transition-colors hover:bg-white/[0.06] hover:text-white" aria-label="Zoom in">+</button>
-        <span className="h-4 w-px bg-white/10" />
-        <button onClick={() => zoom('out')} className="grid h-8 w-9 place-items-center text-neo-mut transition-colors hover:bg-white/[0.06] hover:text-white" aria-label="Zoom out">−</button>
+      <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center overflow-hidden rounded-lg border border-neo-line bg-neo-panel">
+        <button onClick={() => zoom('in')} className="grid h-7 w-8 place-items-center text-neo-mut transition-colors hover:bg-neo-hover hover:text-neo-text" aria-label="Zoom in">+</button>
+        <span className="h-4 w-px bg-neo-line" />
+        <button onClick={() => zoom('out')} className="grid h-7 w-8 place-items-center text-neo-mut transition-colors hover:bg-neo-hover hover:text-neo-text" aria-label="Zoom out">−</button>
       </div>
 
       {/* live indicator */}
-      <span className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest">
-        <span className={`h-2 w-2 rounded-full ${status === 'live' ? 'bg-emerald-400 shadow-[0_0_10px_2px_rgba(16,185,129,0.7)]' : status === 'offline' ? 'bg-rose-400 shadow-[0_0_10px_2px_rgba(255,84,112,0.7)]' : 'bg-neo-mut'}`} />
-        <span className={status === 'live' ? 'text-emerald-300' : status === 'offline' ? 'text-rose-400' : 'text-neo-mut'}>
+      <span className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest">
+        <span className={`h-2 w-2 rounded-full ${status === 'live' ? 'bg-emerald-500' : status === 'offline' ? 'bg-rose-500' : 'bg-neo-mut'}`} />
+        <span className={status === 'live' ? 'text-emerald-500' : status === 'offline' ? 'text-rose-500' : 'text-neo-mut'}>
           {status === 'live' ? 'Live' : status === 'offline' ? 'Offline' : 'Loading'}
         </span>
       </span>
+      </div>
+
+      {/* UTC clock + hide-icons toggle (always visible) */}
+      <div className="pointer-events-none absolute left-2 top-[46px] z-20 flex items-center gap-1.5">
+        <span className="flex items-center gap-1.5 rounded-lg border border-neo-line bg-neo-hover px-2 py-0.5 text-[11px] font-semibold tabular-nums text-neo-text">
+          {clockUTC(now)} <span className="text-neo-mut">UTC</span>
+        </span>
+        <button
+          onClick={onToggleCollapse}
+          aria-label={collapsed ? 'Show chart tools' : 'Hide chart tools'}
+          className="pointer-events-auto grid h-7 w-7 place-items-center rounded-lg border border-neo-line bg-neo-hover text-neo-mut transition-colors hover:text-neo-text md:hidden"
+        >
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d={collapsed ? 'M6 9l6 6 6-6' : 'M18 15l-6-6-6 6'} /></svg>
+        </button>
+      </div>
     </div>
   );
 }

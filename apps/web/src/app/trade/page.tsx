@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TerminalHeader } from '@/components/terminal/terminal-header';
 import { TerminalSidebar } from '@/components/terminal/terminal-sidebar';
@@ -29,6 +29,37 @@ function TerminalInner() {
   const [trades, setTrades] = useState<TerminalTrade[]>([]);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [sbOpen, setSbOpen] = useState(true);
+  const [chartMin, setChartMin] = useState(false);
+  const [hideChrome, setHideChrome] = useState(false);
+  const mainRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const show = (pin: boolean) => {
+      setHideChrome(false);
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (!pin && window.innerWidth < 1024) timer = setTimeout(() => setHideChrome(true), 2000);
+    };
+    const onEvent = () => show(false);
+    const onClick = () => show(true);
+    const pas = { passive: true } as AddEventListenerOptions;
+    window.addEventListener('mousemove', onEvent, pas);
+    window.addEventListener('pointermove', onEvent, pas);
+    window.addEventListener('touchstart', onEvent, pas);
+    window.addEventListener('touchmove', onEvent, pas);
+    window.addEventListener('scroll', onEvent, { capture: true, passive: true });
+    window.addEventListener('click', onClick, true);
+    show(false);
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener('mousemove', onEvent);
+      window.removeEventListener('pointermove', onEvent);
+      window.removeEventListener('touchstart', onEvent);
+      window.removeEventListener('touchmove', onEvent);
+      window.removeEventListener('scroll', onEvent, true);
+      window.removeEventListener('click', onClick, true);
+    };
+  }, []);
 
   const setSymbol = useCallback(
     (s: string) => {
@@ -92,18 +123,20 @@ function TerminalInner() {
 
   return (
     <div className="flex h-dvh w-full flex-col gap-2 overflow-hidden bg-neo-bg p-2 pb-0 font-sans text-neo-text lg:gap-2.5 lg:p-2.5 lg:pb-0">
-      <TerminalHeader status={status} onMenu={() => setSbOpen((o) => !o)} sidebarOpen={sbOpen} />
+      <div className={`relative z-30 overflow-hidden transition-all duration-300 ease-out ${hideChrome ? 'max-h-0 opacity-0' : 'max-h-24 opacity-100'}`}>
+        <TerminalHeader status={status} onMenu={() => setSbOpen((o) => !o)} sidebarOpen={sbOpen} />
+      </div>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-2 lg:flex-row lg:gap-2.5">
         <TerminalSidebar open={sbOpen} onToggle={() => setSbOpen((o) => !o)} />
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto md:flex-row md:overflow-hidden md:gap-2.5">
+        <main ref={mainRef} style={{ overflowAnchor: 'none' }} className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto md:flex-row md:overflow-hidden md:gap-2.5">
           <TerminalRatioBar symbol={symbol} />
-          <div className="flex min-h-[52vh] flex-col md:min-h-0 md:flex-1">
-            <TerminalChart symbol={symbol} onSymbolChange={setSymbol} />
+          <div className="flex h-[55vh] shrink-0 flex-col md:h-auto md:min-h-0 md:flex-1">
+            <TerminalChart symbol={symbol} onSymbolChange={setSymbol} collapsed={chartMin} onToggleCollapse={() => setChartMin((v) => !v)} />
           </div>
           <TerminalActionPanel asset={asset} price={price} trades={trades} message={message} onTrade={onTrade} />
         </main>
       </div>
-      <TerminalNavbar />
+      <TerminalNavbar hidden={hideChrome} />
     </div>
   );
 }

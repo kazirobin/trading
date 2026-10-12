@@ -4,6 +4,46 @@
 
 :root {
   color-scheme: dark;
+  --neo-bg: #0d1117;
+  --neo-shell: #0b0e17;
+  --neo-panel: #161b22;
+  --neo-card: #161c26;
+  --neo-inner: #10141d;
+  --neo-hover: rgba(255, 255, 255, 0.06);
+  --neo-line: #26324a;
+  --neo-text: #e6edf3;
+  --neo-mut: #8395a8;
+  --neo-chart-bg: #0d1117;
+  --neo-chart-grid: #161b22;
+  --neo-chart-border: #26324a;
+  --join-bg: rgba(59, 130, 246, 0.14);
+  --join-line: rgba(96, 165, 250, 0.28);
+  --join-tx: #9dc0fa;
+  --help-bg: rgba(5, 150, 105, 0.14);
+  --help-line: rgba(52, 211, 153, 0.25);
+  --help-tx: #7fd9b2;
+}
+
+html.light {
+  color-scheme: light;
+  --neo-bg: #eef1f6;
+  --neo-shell: #e7ebf2;
+  --neo-panel: #f7f9fc;
+  --neo-card: #ffffff;
+  --neo-inner: #f0f3f8;
+  --neo-hover: rgba(20, 30, 50, 0.06);
+  --neo-line: #d9e0ea;
+  --neo-text: #1a2233;
+  --neo-mut: #5b6b82;
+  --neo-chart-bg: #f7f9fc;
+  --neo-chart-grid: #e4e9f1;
+  --neo-chart-border: #c8d1de;
+  --join-bg: rgba(37, 99, 235, 0.08);
+  --join-line: rgba(37, 99, 235, 0.35);
+  --join-tx: #1d4ed8;
+  --help-bg: rgba(5, 150, 105, 0.08);
+  --help-line: rgba(5, 150, 105, 0.35);
+  --help-tx: #047857;
 }
 
 html,
@@ -92,21 +132,21 @@ body {
 .qt-scroll::-webkit-scrollbar-thumb { background: #333a4d; border-radius: 6px; }
 .qt-scroll::-webkit-scrollbar-track { background: transparent; }
 .menu-item {
-  @apply flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-qt-text hover:bg-qt-hover;
+  @apply flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium;
+  color: var(--neo-text);
+}
+.menu-item:hover {
+  background: var(--neo-hover);
 }
 
 /* ===== Neo / futuristic trading terminal theme ===== */
 .glass {
-  background: rgba(22, 27, 34, 0.72);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  backdrop-filter: blur(16px) saturate(1.4);
-  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: var(--neo-panel);
+  border: 1px solid var(--neo-line);
 }
 .glass-strong {
-  background: rgba(13, 17, 23, 0.86);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  backdrop-filter: blur(20px) saturate(1.4);
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: var(--neo-panel);
+  border: 1px solid var(--neo-line);
 }
 .glow-blue { box-shadow: 0 0 28px -6px rgba(43, 153, 255, 0.55), 0 8px 24px -12px rgba(0, 0, 0, 0.6); }
 .glow-green { box-shadow: 0 0 26px -6px rgba(16, 185, 129, 0.55), 0 8px 24px -12px rgba(0, 0, 0, 0.6); }

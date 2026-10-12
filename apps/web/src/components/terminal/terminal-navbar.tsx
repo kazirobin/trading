@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTheme } from '@/lib/use-theme';
 
 const items = [
   { label: 'Trade', active: true, d: 'M3 17l5-6 4 4 8-9M15 6h5v5' },
@@ -10,15 +11,21 @@ const items = [
   { label: 'More', d: 'M12 5h.01M12 12h.01M12 19h.01' },
 ];
 
-export function TerminalNavbar() {
+export function TerminalNavbar({ hidden = false }: { hidden?: boolean }) {
+  const { theme, toggle } = useTheme();
+
   return (
-    <nav className="sticky bottom-0 left-0 right-0 z-40 grid w-full shrink-0 grid-cols-5 rounded-2xl glass-strong lg:hidden">
+    <nav
+      className={`sticky bottom-0 left-0 right-0 z-40 grid w-full shrink-0 grid-cols-6 overflow-hidden rounded-2xl border border-neo-line bg-neo-panel transition-all duration-300 ease-out lg:hidden ${
+        hidden ? 'max-h-0 opacity-0' : 'max-h-24 opacity-100'
+      }`}
+    >
       {items.map(({ label, active, d }) => (
         <Link
           key={label}
           href={label === 'Trade' ? '/trade' : '/'}
           className={`flex flex-col items-center gap-1 rounded-2xl py-2.5 text-[11px] font-semibold transition-colors ${
-            active ? 'text-white' : 'text-neo-mut hover:text-white'
+            active ? 'text-neo-text' : 'text-neo-mut hover:text-neo-text'
           }`}
         >
           <span className="relative">
@@ -40,9 +47,9 @@ export function TerminalNavbar() {
                 <path d={d} />
               )}
             </svg>
-            {active && <span className="absolute -bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-sky-400 shadow-[0_0_8px_2px_rgba(43,153,255,0.8)]" />}
+            {active && <span className="absolute -bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-sky-500" />}
             {label === 'More' && (
-              <span className="absolute -right-2.5 -top-1.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-gradient-to-r from-sky-400 to-violet-500 px-1 text-[10px] font-bold text-white">
+              <span className="absolute -right-2.5 -top-1.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-sky-500 px-1 text-[10px] font-bold text-white">
                 4
               </span>
             )}
@@ -50,6 +57,26 @@ export function TerminalNavbar() {
           {label}
         </Link>
       ))}
+
+      <button
+        onClick={toggle}
+        aria-label={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+        className="flex flex-col items-center gap-1 rounded-2xl py-2.5 text-[11px] font-semibold text-neo-mut transition-colors hover:text-neo-text"
+      >
+        <span className="relative">
+          {theme === 'dark' ? (
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
+              <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" />
+              <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+            </svg>
+          )}
+        </span>
+        {theme === 'dark' ? 'Light' : 'Dark'}
+      </button>
     </nav>
   );
 }
